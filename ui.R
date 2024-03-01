@@ -45,7 +45,8 @@ ui <- fluidPage(
     
     # Main panel layout
     mainPanel(
-      textOutput("printedText")
+      tableOutput("head_of_df"),
+      textOutput("prediction")
     )
   )
 )
