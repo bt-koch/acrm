@@ -1,15 +1,27 @@
+# general functions ----
 get_dependent_variable <- function() {
   return("lgd")
 }
 
 get_predictors <- function() {
-  return(c("loan.amount", "mortgage.collateral.MV", "additional.collateral.MV"))
+  return(names(prepare_data())[names(prepare_data()) != "lgd"])
 }
 
+# model evaluation ----
+calculate_rmse <- function(actual, predicted) {
+  rmse <- sqrt(sum(actual-predicted)^2/length(actual))
+  return(rmse)
+}
 
+calculate_rmle <- function(actual, predicted) {
+  rmle <- sqrt(sum(ln(predicted+1)-ln(actual+1))^2/length(actual))
+  return(rmle)
+}
+
+# linear regression ----
 linear_regression_calibrate <- function() {
   model <- linear_regression_fit(
-    data = read_data(),
+    data = prepare_data(),
     dependent_variable = get_dependent_variable(),
     regressors = get_predictors()
   )
