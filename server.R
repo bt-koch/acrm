@@ -3,8 +3,7 @@ server <- function(input, output) {
   
   # Event observer for the button press
   observeEvent(input$calculate, {
-    printedText <- printSomething()
-    
+
     df_header <- show_dataframe(read_input(input))
     
     # Update the output
@@ -15,7 +14,7 @@ server <- function(input, output) {
     output$prediction <- renderText({
       paste(
         "Estimated Loss Given Default:",
-        linear_regression_predict(data = read_input(input))
+        linear_regression_predict(data = prepare_data(data = read_input(input)))
       )
     })
     
