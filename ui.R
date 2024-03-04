@@ -51,8 +51,12 @@ ui <- dashboardPage(
     tabItems(
       tabItem(
         tabName = "estimate_lgd",
-        tableOutput("head_of_df"),
-        textOutput("prediction")
+        fluidRow(
+          valueBoxOutput("lgd_estimation")
+        )
+        
+        # tableOutput("head_of_df"),
+        
       ),
       tabItem(
         tabName = "todo",
