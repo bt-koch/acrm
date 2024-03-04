@@ -3,20 +3,14 @@ server <- function(input, output) {
   
   # Event observer for the button press
   observeEvent(input$estimate, {
-
-    df_header <- show_dataframe(read_input(input))
-    
-    # Update the output
-    output$head_of_df <- renderTable({
-      df_header
-    })
-    
-    output$prediction <- renderText({
-      paste(
-        "Estimated Loss Given Default:",
-        linear_regression_predict(data = prepare_data(data = read_input(input)))
+    output$lgd_estimation <- renderValueBox({
+      valueBox(
+        linear_regression_predict(data = prepare_data(data = read_input(input))) |> render_value(),
+        "Loss Given Default",
+        icon = icon("calculator"),
+        color = "purple"
       )
     })
-    
   })
+  
 }
