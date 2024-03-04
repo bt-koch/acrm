@@ -43,7 +43,7 @@ ui <- dashboardPage(
         label = "Type of additional collateral",
         choices = read_data()$additional.collateral.type |> unique()
       ),
-      actionButton("calculate", "Calculate")
+      actionButton("estimate", "Estimate LGD")
     )
     
   ),
@@ -57,18 +57,22 @@ ui <- dashboardPage(
       tabItem(
         tabName = "todo",
         h2("To Do's:"),
-        p("1. Model training"),
+        p("1. Model specification"),
+        tags$ul(
+          tags$li("Resolve problem with multicollinearity"),
+        ),
+        p("2. Model training"),
         tags$ul(
           tags$li("Implement Cross Validation")
         ),
-        p("2. How to evaluate models?"),
+        p("3. How to evaluate models?"),
         tags$ul(
           tags$li("Using Root Mean Squared Error?"),
           tags$li("Root Mean Squared Logarithmic Error?")
         ),
         h2("Ideas:"),
-        p("1. Calculate DT LGD"),
-        p("2. Implications on regulatory capital?"),
+        p("1. Calculate DT LGD?"),
+        p("2. Evaluate implications on regulatory capital?"),
         p("3. Try to calculate proposed interest rate for loan"),
         tags$ul(
           tags$li("to cover expected losses?"),

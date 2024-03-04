@@ -2,7 +2,7 @@
 server <- function(input, output) {
   
   # Event observer for the button press
-  observeEvent(input$calculate, {
+  observeEvent(input$estimate, {
 
     df_header <- show_dataframe(read_input(input))
     
