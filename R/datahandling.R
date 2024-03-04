@@ -25,3 +25,11 @@ read_input <- function(input) {
   )
   return(df)
 }
+
+render_value <- function(value, type = "percent") {
+  if (type == "percent") {
+    value <- round(value*100, 2)
+    value <- paste0(value, "%")
+  }
+  return(value)
+}
