@@ -18,6 +18,10 @@ calculate_rmle <- function(actual, predicted) {
   return(rmle)
 }
 
+cap_prediction <- function(prediction) {
+  return(max(prediction, 0.05))
+}
+
 # linear regression ----
 linear_regression_calibrate <- function() {
   model <- linear_regression_fit(
