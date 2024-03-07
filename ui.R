@@ -64,6 +64,7 @@ ui <- dashboardPage(
         p("1. Model specification"),
         tags$ul(
           tags$li("Resolve problem with multicollinearity"),
+          tags$li("Implement more models")
         ),
         p("2. Model training"),
         tags$ul(
@@ -82,7 +83,9 @@ ui <- dashboardPage(
           tags$li("to cover expected losses?"),
           tags$li("to cover costs from minimal required capital?")
         ),
-        p("Somehow simulate portfolio over time?")
+        p("4. Somehow simulate portfolio over time?"),
+        p("5. Implement decision rule: should loan be approved? with which interest rate?"),
+        p("6. Show model performance metrics in the app?")
       )
     )
   )
