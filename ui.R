@@ -75,6 +75,7 @@ ui <- dashboardPage(
           tags$li("Using Root Mean Squared Error?"),
           tags$li("Root Mean Squared Logarithmic Error?")
         ),
+        p("4. Reestimate LGD only upon button press"),
         h2("Ideas:"),
         p("1. Calculate DT LGD?"),
         p("2. Evaluate implications on regulatory capital?"),
