@@ -64,8 +64,13 @@ ui <- dashboardPage(
         p("1. Model specification"),
         tags$ul(
           tags$li("Resolve problem with multicollinearity"),
-          tags$li("Implement more models")
+          tags$li("Implement more models",
+                  br(),
+                  img(src='images/lgd_models.png', align = "left",
+                      height="25%", width="25%"), 
+                  )
         ),
+        div(style = "height:325px"),
         p("2. Model training"),
         tags$ul(
           tags$li("Implement Cross Validation")
