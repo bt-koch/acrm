@@ -20,7 +20,9 @@ calculate_rmle <- function(actual, predicted) {
 
 cap_prediction <- function(prediction) {
   # TODO: behavior not correct yet
-  return(max(prediction, 0.05))
+  capped_prediction <- max(prediction, 0.05)
+  capped_prediction <- min(capped_prediction, 1)
+  return(capped_prediction)
 }
 
 # linear regression ----
@@ -49,6 +51,6 @@ linear_regression_get <- function(segment = get_relevant_segment(input)) {
   return(models[[segment]])
 }
 
-linear_regression_predict <- function(model = linear_regression_get(segment = get_relevant_segment(input)), data) {
+linear_regression_predict <- function(model = linear_regression_get(segment = get_relevant_segment(read_input(input))), data) {
   predict.lm(model, newdata = data)
 }
