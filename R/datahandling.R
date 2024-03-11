@@ -3,15 +3,19 @@ read_data <- function() {
   return(df)
 }
 
-prepare_data <- function(data = read_data()) {
-
+preprocess_data <- function(data) {
   data$appartment <- ifelse(data$real.estate.type == "appartment", 1, 0)
   data$office_building <- ifelse(data$real.estate.type == "office building", 1, 0)
   data$retirement_account <- ifelse(data$additional.collateral.type == "retirement account", 1, 0)
   data$cash_account <- ifelse(data$additional.collateral.type == "cash account", 1, 0)
-  
   data$X <- data$real.estate.type <- data$additional.collateral.type <- NULL
   names(data) <- gsub("\\.", "_", names(data)) |> tolower()
+  return(data)
+}
+
+prepare_data <- function(data = read_data()) {
+
+  data <- preprocess_data(data)
   
   data$lgd <- data$lgd * data$loan_amount
   
@@ -45,16 +49,21 @@ read_input <- function(input) {
   return(df)
 }
 
-dummy_input <- function() {
-  df <- data.frame(
-    customer = "private",
-    real.estate.type = "appartment",
-    loan.amount = 6130452,
-    mortgage.collateral.MV = 7520761,
-    additional.collateral.MV = 311572,
-    additional.collateral.type = "retirement account"
+dummy_input <- function(customer_type = "private",
+                        real_estate_type = "appartment",
+                        loan_amount = 6130452,
+                        mortgage_collateral_mv = 7520761,
+                        additional_collateral_mv = 311572,
+                        additional_collateral_type = "retirement account") {
+  input <- list(
+    customer_type = customer_type,
+    real_estate_type = real_estate_type,
+    loan_amount = loan_amount,
+    mortgage_collateral_mv = mortgage_collateral_mv,
+    additional_collateral_mv = additional_collateral_mv,
+    additional_collateral_type = additional_collateral_type
   )
-  return(df)
+  return(input)
 }
 
 render_value <- function(value, type = "percent") {
