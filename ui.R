@@ -18,7 +18,7 @@ ui <- dashboardPage(
       selectInput(
         inputId = "real_estate_type",
         label = "Select type of real estate",
-        choices = read_data()$real.estate.type |> unique()
+        choices = read_data()$real_estate_type |> unique()
       ),
       numericInput(
         inputId = "loan_amount",
@@ -41,7 +41,7 @@ ui <- dashboardPage(
       selectInput(
         inputId = "additional_collateral_type",
         label = "Type of additional collateral",
-        choices = read_data()$additional.collateral.type |> unique()
+        choices = read_data()$additional_collateral_type |> unique()
       ),
       actionButton("estimate", "Estimate LGD")
     )
