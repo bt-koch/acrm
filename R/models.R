@@ -46,8 +46,9 @@ linear_regression_fit <- function(data, dependent_variable, regressors) {
 
 linear_regression_get <- function(segment = get_relevant_segment(input)) {
   models <- readRDS("calibrated_models/linear_regression.rds")
+  return(models[[segment]])
 }
 
-linear_regression_predict <- function(model = linear_regression_get(), data) {
+linear_regression_predict <- function(model = linear_regression_get(segment = get_relevant_segment(input)), data) {
   predict.lm(model, newdata = data)
 }
