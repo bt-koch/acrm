@@ -1,15 +1,15 @@
 read_data <- function() {
-  df <- read.csv("data/lgd_dataset.csv")
-  return(df)
+  data <- read.csv("data/lgd_dataset.csv")
+  names(data) <- gsub("\\.", "_", names(data)) |> tolower()
+  return(data)
 }
 
 preprocess_data <- function(data) {
-  data$appartment <- ifelse(data$real.estate.type == "appartment", 1, 0)
-  data$office_building <- ifelse(data$real.estate.type == "office building", 1, 0)
-  data$retirement_account <- ifelse(data$additional.collateral.type == "retirement account", 1, 0)
-  data$cash_account <- ifelse(data$additional.collateral.type == "cash account", 1, 0)
-  data$X <- data$real.estate.type <- data$additional.collateral.type <- NULL
-  names(data) <- gsub("\\.", "_", names(data)) |> tolower()
+  data$appartment <- ifelse(data$real_estate_type == "appartment", 1, 0)
+  data$office_building <- ifelse(data$real_estate_type == "office building", 1, 0)
+  data$retirement_account <- ifelse(data$additional_collateral_type == "retirement account", 1, 0)
+  data$cash_account <- ifelse(data$additional_collateral_type == "cash account", 1, 0)
+  data$X <- data$real.estate.type <- data$additional_collateral_type <- NULL
   
   if (Sys.getenv("SCALE") == "percentage") {
     data$mortgage_collateral_mv <- data$mortgage_collateral_mv / data$loan_amount
@@ -59,11 +59,11 @@ get_relevant_segment <- function(input = read_input(input)) {
 read_input <- function(input) {
   df <- data.frame(
     customer = input$customer_type,
-    real.estate.type = input$real_estate_type,
-    loan.amount = input$loan_amount,
-    mortgage.collateral.MV = input$mortgage_collateral_mv,
-    additional.collateral.MV = input$additional_collateral_mv,
-    additional.collateral.type = input$additional_collateral_type
+    real_estate_type = input$real_estate_type,
+    loan_amount = input$loan_amount,
+    mortgage_collateral_mv = input$mortgage_collateral_mv,
+    additional_collateral_mv = input$additional_collateral_mv,
+    additional_collateral_type = input$additional_collateral_type
   )
   return(df)
 }
