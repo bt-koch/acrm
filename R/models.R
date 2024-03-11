@@ -25,6 +25,20 @@ cap_prediction <- function(prediction) {
   return(capped_prediction)
 }
 
+scale_prediction <- function(prediction, input) {
+  if (Sys.getenv("SCALE") == "nominal") {
+    loan_amount <- read_input(input)$loan_amount
+    recover <- read_input(input)$mortgage_collateral_mv + read_input(input)$additional_collateral_mv
+    prediction <- (loan_amount - recover) / loan_amount
+  } else if (Sys.getenv("SCALE") == "standardize") {
+    data <- read_data()
+    prediction <- prediction * sd(data$lgd) + mean(data$lgd)
+  } else if (Sys.getenv("SCALE") != "percentage") {
+    stop("invalid environment variable for 'SCALE'")
+  }
+  return(prediction)
+}
+
 # linear regression ----
 linear_regression_calibrate <- function() {
   
