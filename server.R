@@ -1,11 +1,19 @@
-# Define server logic
 server <- function(input, output) {
   
-  # Event observer for the button press
   observeEvent(input$estimate, {
+    
+    model_input <- input |>
+      read_input() |>
+      preprocess_data()
+    
+    estimated_lgd <- linear_regression_predict(
+      model = linear_regression_get(segment = get_relevant_segment(read_input(input))),
+      data = model_input
+    )
+    
     output$lgd_estimation <- renderValueBox({
       valueBox(
-        linear_regression_predict(data = prepare_data(data = read_input(input))) |> 
+        estimated_lgd |> 
           cap_prediction() |> 
           render_value(),
         "Loss Given Default",
