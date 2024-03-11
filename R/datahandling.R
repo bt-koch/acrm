@@ -1,6 +1,7 @@
 read_data <- function() {
   data <- read.csv("data/lgd_dataset.csv")
   names(data) <- gsub("\\.", "_", names(data)) |> tolower()
+  data$x <- NULL
   return(data)
 }
 
@@ -9,7 +10,7 @@ preprocess_data <- function(data) {
   data$office_building <- ifelse(data$real_estate_type == "office building", 1, 0)
   data$retirement_account <- ifelse(data$additional_collateral_type == "retirement account", 1, 0)
   data$cash_account <- ifelse(data$additional_collateral_type == "cash account", 1, 0)
-  data$X <- data$real.estate.type <- data$additional_collateral_type <- NULL
+  data$X <- data$real_estate_type <- data$additional_collateral_type <- NULL
   
   if (Sys.getenv("SCALE") == "percentage") {
     data$mortgage_collateral_mv <- data$mortgage_collateral_mv / data$loan_amount
