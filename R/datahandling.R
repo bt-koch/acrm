@@ -23,12 +23,13 @@ prepare_data <- function(data = read_data()) {
   return(list("segment_1" = segment_1, "segment_2" = segment_2))
 }
 
-get_relevant_segment <- function(input) {
-  df_input <- read_input(input)
-  if (unique(df_input$customer_type) == "private") {
+get_relevant_segment <- function(input = read_input(input)) {
+  if (unique(input$customer) == "private") {
     return("segment_1")
-  } else if (unique(df_input$customer_type == "corporate")) {
+  } else if (unique(input$customer == "corporate")) {
     return("segment_2")
+  } else {
+    stop("segment cannot be assigned correctly")
   }
 }
 
