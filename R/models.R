@@ -30,12 +30,12 @@ scale_prediction <- function(prediction, input) {
 
 # model evaluation ----
 calculate_rmse <- function(actual, predicted) {
-  rmse <- sqrt(sum(actual-predicted)^2/length(actual))
+  rmse <- sqrt(sum((actual-predicted)^2)/length(actual))
   return(rmse)
 }
 
 calculate_rmle <- function(actual, predicted) {
-  rmle <- sqrt(sum(ln(predicted+1)-ln(actual+1))^2/length(actual))
+  rmle <- sqrt(sum((ln(predicted+1)-ln(actual+1))^2)/length(actual))
   return(rmle)
 }
 
