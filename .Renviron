@@ -1,1 +1,2 @@
+# options for SCALE: "nominal", "percentage", "standardize"
 SCALE = "nominal"
