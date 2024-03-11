@@ -44,6 +44,17 @@ read_input <- function(input) {
   return(df)
 }
 
+dummy_input <- function() {
+  df <- data.frame(
+    customer = "private",
+    real.estate.type = "appartment",
+    loan.amount = 6130452,
+    mortgage.collateral.MV = 7520761,
+    additional.collateral.MV = 311572,
+    additional.collateral.type = "retirement account"
+  )
+  return(df)
+}
 
 render_value <- function(value, type = "percent") {
   if (type == "percent") {
