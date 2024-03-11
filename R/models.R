@@ -4,7 +4,7 @@ get_dependent_variable <- function() {
 }
 
 get_predictors <- function() {
-  return(names(prepare_data())[names(prepare_data()) != "lgd"])
+  return(names(prepare_data()[[1]])[names(prepare_data()[[1]]) != "lgd"])
 }
 
 # model evaluation ----
@@ -19,17 +19,24 @@ calculate_rmle <- function(actual, predicted) {
 }
 
 cap_prediction <- function(prediction) {
+  # TODO: behavior not correct yet
   return(max(prediction, 0.05))
 }
 
 # linear regression ----
 linear_regression_calibrate <- function() {
-  model <- linear_regression_fit(
-    data = prepare_data(),
-    dependent_variable = get_dependent_variable(),
-    regressors = get_predictors()
-  )
-  saveRDS(model, "calibrated_models/linear_regression.rds")
+  
+  data <- prepare_data()
+  
+  models <- lapply(data, function(x) {
+    linear_regression_fit(
+      data = x,
+      dependent_variable = get_dependent_variable(),
+      regressors = get_predictors()
+    )
+  })
+  
+  saveRDS(models, "calibrated_models/linear_regression.rds")
 }
 
 linear_regression_fit <- function(data, dependent_variable, regressors) {
@@ -37,8 +44,8 @@ linear_regression_fit <- function(data, dependent_variable, regressors) {
   return(model)
 }
 
-linear_regression_get <- function() {
-  model <- readRDS("calibrated_models/linear_regression.rds")
+linear_regression_get <- function(segment = get_relevant_segment(input)) {
+  models <- readRDS("calibrated_models/linear_regression.rds")
 }
 
 linear_regression_predict <- function(model = linear_regression_get(), data) {
