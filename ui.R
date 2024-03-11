@@ -16,7 +16,7 @@ ui <- dashboardPage(
         choices = read_data()$customer |> unique()
       ),
       selectInput(
-        inputId = "realestate_type",
+        inputId = "real_estate_type",
         label = "Select type of real estate",
         choices = read_data()$real.estate.type |> unique()
       ),
