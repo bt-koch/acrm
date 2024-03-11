@@ -7,17 +7,6 @@ get_predictors <- function() {
   return(names(prepare_data()[[1]])[names(prepare_data()[[1]]) != "lgd"])
 }
 
-# model evaluation ----
-calculate_rmse <- function(actual, predicted) {
-  rmse <- sqrt(sum(actual-predicted)^2/length(actual))
-  return(rmse)
-}
-
-calculate_rmle <- function(actual, predicted) {
-  rmle <- sqrt(sum(ln(predicted+1)-ln(actual+1))^2/length(actual))
-  return(rmle)
-}
-
 cap_prediction <- function(prediction) {
   # TODO: behavior not correct yet
   capped_prediction <- max(prediction, 0.05)
@@ -37,6 +26,17 @@ scale_prediction <- function(prediction, input) {
     stop("invalid environment variable for 'SCALE'")
   }
   return(prediction)
+}
+
+# model evaluation ----
+calculate_rmse <- function(actual, predicted) {
+  rmse <- sqrt(sum(actual-predicted)^2/length(actual))
+  return(rmse)
+}
+
+calculate_rmle <- function(actual, predicted) {
+  rmle <- sqrt(sum(ln(predicted+1)-ln(actual+1))^2/length(actual))
+  return(rmle)
 }
 
 # linear regression ----
