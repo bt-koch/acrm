@@ -17,9 +17,9 @@ preprocess_data <- function(data) {
     data$additional_collateral_mv <- data$additional_collateral_mv / data$loan_amount
     data$loan_amount <- 1
   } else if (Sys.getenv("SCALE") == "standardize") {
-    data$mortgage_collateral_mv <- (data$mortgage_collateral_mv - mean(data$mortgage_collateral_mv)) / sd(data$mortgage_collateral_mv)
-    data$additional_collateral_mv <- (data$additional_collateral_mv) - mean(data$additional_collateral_mv) / sd(data$additional_collateral_mv)
-    data$loan_amount <- (data$loan_amount - mean(data$loan_amount)) / sd(data$loan_amount)
+    data$mortgage_collateral_mv <- (data$mortgage_collateral_mv - mean(read_data()$mortgage_collateral_mv)) / sd(read_data()$mortgage_collateral_mv)
+    data$additional_collateral_mv <- (data$additional_collateral_mv - mean(read_data()$additional_collateral_mv)) / sd(read_data()$additional_collateral_mv)
+    data$loan_amount <- (data$loan_amount - mean(read_data()$loan_amount)) / sd(read_data()$loan_amount)
   } else if (Sys.getenv("SCALE") != "nominal") {
     stop("invalid environment variable for 'SCALE'")
   }
