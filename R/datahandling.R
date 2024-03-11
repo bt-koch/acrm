@@ -10,6 +10,19 @@ preprocess_data <- function(data) {
   data$cash_account <- ifelse(data$additional.collateral.type == "cash account", 1, 0)
   data$X <- data$real.estate.type <- data$additional.collateral.type <- NULL
   names(data) <- gsub("\\.", "_", names(data)) |> tolower()
+  
+  if (Sys.getenv("SCALE") == "percentage") {
+    data$mortgage_collateral_mv <- data$mortgage_collateral_mv / data$loan_amount
+    data$additional_collateral_mv <- data$additional_collateral_mv / data$loan_amount
+    data$loan_amount <- 1
+  } else if (Sys.getenv("SCALE") == "standardize") {
+    data$mortgage_collateral_mv <- (data$mortgage_collateral_mv - mean(data$mortgage_collateral_mv)) / sd(data$mortgage_collateral_mv)
+    data$additional_collateral_mv <- (data$additional_collateral_mv) - mean(data$additional_collateral_mv) / sd(data$additional_collateral_mv)
+    data$loan_amount <- (data$loan_amount - mean(data$loan_amount)) / sd(data$loan_amount)
+  } else if (Sys.getenv("SCALE") != "nominal") {
+    stop("invalid environment variable for 'SCALE'")
+  }
+  
   return(data)
 }
 
@@ -17,8 +30,14 @@ prepare_data <- function(data = read_data()) {
 
   data <- preprocess_data(data)
   
-  data$lgd <- data$lgd * data$loan_amount
-  
+  if (Sys.getenv("SCALE") == "nominal") {
+    data$lgd <- data$lgd * data$loan_amount
+  } else if (Sys.getenv("SCALE") == "standardize") {
+    data$lgd <- (data$lgd - mean(data$lgd)) / sd(data$lgd)
+  } else if (Sys.getenv("SCALE") != "percentage") {
+    stop("invalid environment variable for 'SCALE'")
+  } 
+
   segment_1 <- data[data$customer == "private",]
   segment_2 <- data[data$customer == "corporate",]
   segment_1$customer <- NULL
