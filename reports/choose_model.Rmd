@@ -5,8 +5,8 @@ date: "2024-03-14"
 output:
   html_document:
     default
-  pdf_document:
-    default
+  # pdf_document:
+  #   default
 ---
 
 ```{r setup, include=FALSE}
