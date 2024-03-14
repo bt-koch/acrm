@@ -4,3 +4,7 @@
 .Ruserdata
 rsconnect/
 .DS_Store
+data/
+scripts/
+presentation/
+reports/eda.*
