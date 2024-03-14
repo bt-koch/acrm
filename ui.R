@@ -52,7 +52,10 @@ ui <- dashboardPage(
       tabItem(
         tabName = "estimate_lgd",
         fluidRow(
-          infoBoxOutput("warnings")
+          infoBoxOutput("errors", width = 6)
+        ),
+        fluidRow(
+          infoBoxOutput("warnings", width = 6)
         ),
         fluidRow(
           valueBoxOutput("lgd_estimation", width = 6)

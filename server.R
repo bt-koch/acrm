@@ -6,35 +6,36 @@ server <- function(input, output) {
       read_input() |>
       preprocess_data()
     
-    # model_input <- dummy_input(mortgage_collateral_mv = -12345) |> 
-    #   read_input() |> 
-    #   preprocess_data()
     validation_result <- validate_input(model_input)
     
     if (any(lapply(validation_result, function(x) x[["type"]]) == "warning")) {
-      
       output$warnings <- renderInfoBox({
-        
-        warnings <- Filter(function(x) x[["type"]] == "warning", validation_result)
-        warnings <- sapply(warnings, function(x) x[["message"]])
-        warnings <- paste(warnings, collapse = "<br>")
-        
+        message <- subset_validation_result(validation_result, type = "warning")
         infoBox(
           "Warnings",
-          HTML(warnings),
+          HTML(message),
           icon = icon("exclamation"),
           color = "yellow"
         )
       })
-      
     } else {
-      
       output$warnings <- NULL
-      
     }
     
+    if (any(lapply(validation_result, function(x) x[["type"]]) == "error")) {
+      output$errors <- renderInfoBox({
+        message <- subset_validation_result(validation_result, type = "error")
+        infoBox(
+          "Errors",
+          HTML(message),
+          icon = icon("exclamation"),
+          color = "red"
+        )
+      })
+    } else {
+      output$errors <- NULL
+    }
     
-    # stop if error
     if (any(lapply(validation_result, function(x) x[["type"]]) == "error")) {
       
       output$lgd_estimation <- renderInfoBox({
