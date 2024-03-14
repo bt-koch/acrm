@@ -8,7 +8,6 @@ get_predictors <- function() {
 }
 
 cap_prediction <- function(prediction) {
-  # TODO: behavior not correct yet
   capped_prediction <- max(prediction, 0.05)
   capped_prediction <- min(capped_prediction, 1)
   return(capped_prediction)
@@ -38,6 +37,46 @@ calculate_rmle <- function(actual, predicted) {
   rmle <- sqrt(sum((ln(predicted+1)-ln(actual+1))^2)/length(actual))
   return(rmle)
 }
+
+cross_validation <- function(data, nfolds = 10,
+                             dependent_variable = get_dependent_variable(),
+                             regressors = get_predictors(),
+                             convert_nom = F) {
+  
+  result <- c()
+  data <- data[sample(nrow(data)),]
+  folds <- cut(seq(1, nrow(data)), breaks = nfolds, labels = F)
+  
+  for (i in 1:nfolds) {
+    index <- which(folds == i, arr.ind = T)
+    test_set <- data[index,]
+    train_set <- data[-index,]
+    
+    model <- linear_regression_fit(train_set, dependent_variable, regressors)
+    predictions <- linear_regression_predict(model, test_set)
+    
+    if (convert_nom) predictions <- predictions / test_set$loan_amount
+    
+    result <- c(result, calculate_rmse(test_set$lgd, predictions))
+  }
+  
+  return(mean(result))
+}
+
+calculate_differences <- function(actual, predicted) {
+  difference <- actual - predicted
+  return(difference)
+}
+
+plot_differences <- function(differences, main = "Distribution of observed - predicted LGD") {
+  plot(density(differences), main = main)
+  abline(v = mean(differences))
+  abline(v = median(differences), lty = 2)
+  abline(v = -sd(differences), col = "grey")
+  abline(v = sd(differences), col = "grey")
+}
+
+
 
 # linear regression ----
 linear_regression_calibrate <- function() {
