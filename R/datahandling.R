@@ -66,6 +66,11 @@ read_input <- function(input) {
     additional_collateral_mv = input$additional_collateral_mv,
     additional_collateral_type = input$additional_collateral_type
   )
+  
+  if (input$additional_collateral_type == "none") {
+    df$additional_collateral_mv <- 0
+  }
+  
   return(df)
 }
 

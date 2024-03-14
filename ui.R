@@ -22,26 +22,29 @@ ui <- dashboardPage(
       ),
       numericInput(
         inputId = "loan_amount",
-        label = "Loan amount to customer",
+        label = "Loan amount to customer (in CHF)",
         value = 6130452,
         min = 0
       ),
       numericInput(
         inputId = "mortgage_collateral_mv",
-        label = "Market value of mortgage collateral",
+        label = "Market value of mortgage collateral (in CHF)",
         value = 7520761,
-        min = 0
-      ),
-      numericInput(
-        inputId = "additional_collateral_mv",
-        label = "Market value of additional collateral",
-        value = 311572,
         min = 0
       ),
       selectInput(
         inputId = "additional_collateral_type",
         label = "Type of additional collateral",
         choices = read_data()$additional_collateral_type |> unique()
+      ),
+      conditionalPanel(
+        "input.additional_collateral_type != 'none'",
+        numericInput(
+          inputId = "additional_collateral_mv",
+          label = "Market value of additional collateral (in CHF)",
+          value = 311572,
+          min = 0
+        )
       ),
       actionButton("estimate", "Estimate LGD")
     )
