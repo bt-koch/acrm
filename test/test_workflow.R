@@ -1,7 +1,7 @@
 prepare_session()
 
 # 1: user makes input
-input <- dummy_input()
+input <- dummy_input(customer_type = "private")
 
 # 2: read user input
 model_input <- read_input(input)
