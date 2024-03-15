@@ -1,5 +1,5 @@
-read_data <- function() {
-  data <- read.csv("data/lgd_dataset.csv")
+read_data <- function(path = "data/lgd_dataset.csv") {
+  data <- read.csv(path)
   names(data) <- gsub("\\.", "_", names(data)) |> tolower()
   data$x <- NULL
   return(data)
