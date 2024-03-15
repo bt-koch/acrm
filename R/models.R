@@ -68,8 +68,9 @@ calculate_differences <- function(actual, predicted) {
   return(difference)
 }
 
-plot_differences <- function(differences, main = "Distribution of observed - predicted LGD") {
-  plot(density(differences), main = main)
+plot_differences <- function(differences, main = "Distribution of observed - predicted LGD",
+                             xlim = c(min(differences), max(differences))) {
+  plot(density(differences), main = main, xlim = xlim)
   abline(v = mean(differences))
   abline(v = median(differences), lty = 2)
   abline(v = -sd(differences), col = "grey")
