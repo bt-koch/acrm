@@ -1,7 +1,7 @@
 ---
-title: "Untitled"
+title: "Model Selection"
 author: "Bela Koch"
-date: "2024-03-14"
+date: "2024-03-18"
 output:
   html_document:
     default
@@ -12,6 +12,8 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_knit$set(root.dir = "../")
+knitr::opts_chunk$set(fig.width = 12)
+knitr::opts_chunk$set(comment = "")
 options(scipen = 999)
 ```
 
@@ -24,6 +26,7 @@ prepare_session()
 
 ```{r echo=TRUE}
 data <- read_data()
+# data <- read_data("../data/lgd_dataset.csv")
 
 data$appartment_collateral_mv <- ifelse(
   data$real_estate_type == "appartment",
@@ -46,14 +49,65 @@ data$single_family_house <- ifelse(
   0
 )
 data$lgd_nom <- data$lgd * data$loan_amount
+data$lgd_log <- log(data$lgd+1)
+data$house_collateral_ratio <- data$house_collateral_mv / data$loan_amount
+data$appartment_collateral_ratio <- data$appartment_collateral_mv / data$loan_amount
 data$office_collateral_ratio <- data$office_collateral_mv / data$loan_amount
 data$additional_collateral_ratio <- data$additional_collateral_mv / data$loan_amount
+
+data$loan_amount_log <- log(data$loan_amount)
+data$house_collateral_log <- log(data$house_collateral_mv+1)
+data$appartment_collateral_log <- log(data$appartment_collateral_mv+1)
+data$office_collateral_log <- log(data$office_collateral_mv+1)
+data$additional_collateral_log <- log(data$additional_collateral_mv+1)
+
+data$rr <-  1 - data$lgd
+data$rr_nom <- data$rr * data$loan_amount
+data$rr_nom_log <- log(data$rr_nom)
+
+data$loan_to_mortg <- data$loan_amount / data$mortgage_collateral_mv
+data$loan_to_addit <- data$loan_amount / data$additional_collateral_mv
+data$loan_to_colla <- data$loan_amount / (data$mortgage_collateral_mv + data$additional_collateral_mv)
 ```
 
-## Benchmark: simple linear regression
+<!-- ## Benchmark: simple linear regression -->
 
-I need to do this. Then I can compare COMBINED! output of my model - I mean
-performance of all models vs this benchmark.
+<!-- I need to do this. Then I can compare COMBINED! output of my model - I mean -->
+<!-- performance of all models vs this benchmark. -->
+
+## Segmentation
+
+It makes intuitively sense that the dynamics with which loans are provided,
+repaid and the overall riskyness of a loan is dependent on the loan type.
+For example, higher risk might be associated with a loan which is used by a 
+business to enter a new market compared to the buying of a house by a private
+person. Looking at the distribution of the recovery in CHF makes the difference
+visible (using logs for better visibility):
+
+```{r fig.height=6}
+p1 <- hist(data[data$customer == "private",]$rr_nom_log, breaks = 100, plot = F)
+p2 <- hist(data[data$customer == "corporate",]$rr_nom_log, breaks = 100, plot = F)
+plot( p1, col=rgb(0,0,1,1/4), xlim=c(11,19),
+      main = "Histogramm of log(Recovery in CHF)",
+           xlab = "log(Recovery in CHF)")
+plot( p2, col=rgb(1,0,0,1/4), xlim=c(11,19), add=T) 
+legend("topleft", col = c(rgb(0,0,1,1/4), rgb(1,0,0,1/4)), lwd = 10,
+       legend = c("private customers", "corporate customers"))
+```
+
+Therefore, we might want to fit one model for private customers and one model
+for corporate customers separately.
+
+***
+
+## Ad hoc manipulation of the predicted dependent variable
+
+Note that using some model (e.g. linear regression) we might predict negative
+values for loss given default which - at least in this context - does not make
+sense. Therefore, after prediction the estimates which are negative are set to
+zero.
+
+***
 
 ## Segment 1: Private Clients
 
@@ -61,6 +115,7 @@ performance of all models vs this benchmark.
 segment_private <- data[data$customer == "private",]
 ```
 
+First, let's subset the dataset and only focus on private clients.
 Note that the observed loss given default seems to depend on the type of real
 estate:
 
@@ -89,14 +144,14 @@ segment_private[c(736, 827, 719, 274, 648, 519), c("real_estate_type", "house_co
   knitr::kable()
 ```
 
+If we consider nominal values, there should be a positive relationship between
+the market values of the collateral types and the nominal loss given default (resp.
+the recovery in CHF):
 
-Remember that the models are fitted using nominal values. Therefore, the higher
-the collateral value the higher the expected loss given default (ceteris paribus):
-
-```{r fig.height=8}
+```{r fig.height=12}
 par(mfrow = c(3, 1))
 
-rel_cols <- c("appartment_collateral_mv", "house_collateral_mv", "additional_collateral_mv")
+rel_cols <- c("loan_amount", "appartment_collateral_mv", "house_collateral_mv", "additional_collateral_mv")
 
 xlim <- c(0, max(segment_private[rel_cols]))
 ylim <- c(min(segment_private$lgd_nom), max(segment_private$lgd_nom))
@@ -109,66 +164,362 @@ for (var in rel_cols) {
 }
 ```
 
+Hence, the market values could be a good predictor of the loss given default
+in CHF, which then can be converted to the loss given default in % by dividing
+with the loan amount.
+
+***
+
 ### Model 1
 
-The first model uses the corresponding market values and a dummy whether the
-real estate type is single family house (1) or not (0):
+The first model uses the corresponding market values of the collateral to predict
+the loss given default in CHF:
 
 $$
-\text{nominal LGD}_i = \beta_0 + \beta_1*\text{MV appartment}_i + \beta_2*\text{MV house}_i + \beta_3*\text{MV additional}_i + \beta_4*\text{single family house}_i + \epsilon_i
+\text{nominal LGD}_i = \beta_0 + \beta_1*\text{MV appartment}_i + \beta_2*\text{MV house}_i + \beta_3*\text{MV additional}_i + \epsilon_i
 $$
 
 Summary of this model:
 
-```{r results='asis'}
+```{r}
+dep <- "lgd_nom"
+indep <- c("loan_amount", "appartment_collateral_mv", "house_collateral_mv", "additional_collateral_mv")
+
 model_private_1 <- linear_regression_fit(
   data = segment_private,
-  dependent_variable = "lgd_nom",
-  regressors = c("loan_amount",
-                 "appartment_collateral_mv",
-                 "house_collateral_mv",
-                 "additional_collateral_mv",
-                 "single_family_house"))
+  dependent_variable = dep,
+  regressors = indep)
 
-if (knitr::pandoc_to("html")) type <- "html" else type <- "latex"
-stargazer::stargazer(model_private_1, header = F, type = type)
+summary(model_private_1) |> print()
 ```
 
 
 ```{r}
 rmse_percent <- cross_validation(
   data = segment_private,
-  dependent_variable = "lgd_nom",
-  regressors = c("loan_amount", "appartment_collateral_mv", "house_collateral_mv", "additional_collateral_mv", "single_family_house"),
+  dependent_variable = dep,
+  regressors = indep,
   convert_nom = T
 )
 rmse_nominal <- cross_validation(
   data = segment_private,
-  dependent_variable = "lgd_nom",
-  regressors = c("loan_amount", "appartment_collateral_mv", "house_collateral_mv", "additional_collateral_mv", "single_family_house"),
+  dependent_variable = dep,
+  regressors = indep,
   convert_nom = F
 )
 ```
 
-This models RMSE score is `r round(rmse_nominal, 2)` resp. `r paste0(round(rmse_percent*100, 2), "%")`.
+This models RMSE score is `r round(rmse_nominal, 2)` CHF resp. `r paste0(round(rmse_percent*100, 2), "%")`.
 
 Following plot shows the difference between the realized LGD values and the
 corresponding predictions:
 
 ```{r}
-diffs <- calculate_differences(segment_private$lgd_nom, linear_regression_predict(model_private_1, segment_private))
+pred <- linear_regression_predict(model_private_1, segment_private)
+pred <- pmax(0, pred)
+
+diffs <- calculate_differences(segment_private$lgd_nom, pred)
+diffs_model_1 <- diffs
 plot_differences(diffs)
 ```
 
-### todo private
+Note that the predictions for single family houses (on the RHS of vertical line)
+are systematically worse than for apartments:
 
-also implement segm acc to ratio
 ```{r}
-segment_private$loan_to_collateral <- segment_private$loan_amount / (segment_private$house_collateral_mv + segment_private$appartment_collateral_mv + segment_private$additional_collateral_mv)
-hist(segment_private$loan_to_collateral, breaks = 50)
-abline(v = median(segment_private$loan_to_collateral))
+plot(diffs/segment_private$loan_amount, main = "Observed - Predicted relative to loan amount")
+abline(v = which(segment_private$real_estate_type == "single family house")[1])
+abline(h = 0, col = "grey")
 ```
 
+We might to look deeper into this difference by real estate types.
+
+
+Overall, we estimate a loss of `r round(sum(pred)/10^6, 2)` mio. CHF while the
+observed loss is `r round(sum(segment_private$lgd_nom)/10^6, 2)` mio. CHF, hence
+we overestimate the loss by `r round((sum(pred)-sum(segment_private$lgd_nom))/10^6, 2)`
+mio. CHF what we might prefer from a risk management point of view (compared to
+underestimate the loss).
+
+***
+
+### Model 2
+
+Note the distribution of the target variable
+
+```{r}
+hist(segment_private$lgd_nom, breaks = 50,
+     main = "Histogram of LGD in CHF")
+```
+
+Maybe converting the target variable to logs and hence also the predictors such
+that they have similar scaling might lead to better performance. Note that the
+target variable includes a lot of zeros, which result in `-Inf` when converting
+to logs which cannot be used for regression. Therefore, the loss given default
+is converted to the recovery rate resp. the recovery in CHF before taking the 
+log, leading to following distribution:
+
+```{r}
+hist(segment_private$rr_nom, breaks = 50,
+     main = "Histogram of log(Recovery in CHF)")
+```
+
+Unfortunately, there is no economic valid way to transform the market value
+of collaterals such that we do not have any zeros anymore. Therefore, one CHF
+is added to all market values, resulting in a negligible difference if the
+market value is positive as the values are quite large and zero for no collateral
+since $log(1) = 0$.
+
+The model which is fitted now:
+
+$$
+\text{log(nominal recovery)}_i = \beta_0 + \beta_1*\text{log(MV appartment)}_i + \beta_2*\text{log(MV house)}_i + \beta_3*\text{log(MV additional)}_i + \epsilon_i
+$$
+
+```{r}
+dep <- "rr_nom_log"
+indep <- c("loan_amount_log", "appartment_collateral_log", "house_collateral_log", "additional_collateral_log")
+
+model_private_2 <- linear_regression_fit(
+  data = segment_private,
+  dependent_variable = dep,
+  regressors = indep)
+
+# if (knitr::pandoc_to("html")) type <- "html" else type <- "latex"
+# stargazer::stargazer(model_private_2, header = F, type = type)
+summary(model_private_2) |> print()
+```
+
+```{r}
+pred <- predict(model_private_2)
+pred <- exp(pred)
+pred <- pred / segment_private$loan_amount
+pred <- 1 - pred
+pred <- pred * segment_private$loan_amount
+pred <- pmax(0, pred)
+
+
+diffs <- calculate_differences(segment_private$lgd_nom, pred)
+plot_differences(diffs)
+```
+
+```{r}
+plot(diffs/segment_private$loan_amount)
+abline(v = which(segment_private$real_estate_type == "single family house")[1])
+```
+
+```{r}
+sum(diffs)
+```
+
+```{r}
+print(paste(
+  "we expect", sum(pred)/10^6, "mio CHF loss. Real loss was", sum(segment_private$lgd_nom)/10^6
+))
+```
+
+Overall, we estimate a loss of `r round(sum(pred)/10^6, 2)` mio. CHF while the
+observed loss is `r round(sum(segment_private$lgd_nom)/10^6, 2)` mio. CHF, hence
+we overestimate the loss by `r round((sum(pred)-sum(segment_private$lgd_nom))/10^6, 2)`
+mio. CHF what we might prefer from a risk management point of view (compared to
+underestimate the loss). However, the first model also overestimates the loss but
+is still more accurate. Therefore, we might prefer model 1 over model 2.
+
+## Model 3
+
+Note that the response variable LGD cannot be negative and therefore is bounded.
+There might be an underlying linear model but the observed LGD values are truncated:
+
+$$
+\text{LGD}_i = \max(\widehat{LGD}_i, 0)
+$$
+
+Therefore, let's try tobit regression
+
+```{r}
+model_private_3 <- AER::tobit(
+  formula = reformulate(
+    c(#"loan_amount",
+                 "appartment_collateral_ratio",
+                 "house_collateral_ratio",
+                 "additional_collateral_ratio"),
+  "lgd"),
+  left = 0, right = 1, dist = "logistic",
+  data = segment_private#[segment_private$real_estate_type == "appartment",]
+)
+
+
+if (knitr::pandoc_to("html")) type <- "html" else type <- "latex"
+# stargazer::stargazer(model_private_3, header = F, type = type)
+summary(model_private_3)
+```
+
+Note: Tobit predicts what the result ought to be in the absence of the truncation.
+Therefore, convert negative estimates to 0.
+
+```{r}
+pred <- predict(model_private_3, type = "response")
+pred <- pmax(0, pred)
+
+tobit_diffs <- calculate_differences(segment_private$lgd, pred)
+# tobit_diffs <- calculate_differences(segment_private[segment_private$real_estate_type == "appartment",]$lgd, pred)
+
+plot_differences(tobit_diffs)
+```
+
+```{r}
+plot(tobit_diffs)
+abline(v = which(segment_private$real_estate_type == "single family house")[1])
+```
+
+Although the tobit model seems to predict more accurately, the problem is that
+using the tobit model we estimate a loss of `r round(sum(pred*segment_private$loan_amount)/10^6, 2)`
+mio. CHF while the observed loss is `r round(sum(segment_private$lgd_nom)/10^6, 2)` mio. CHF, hence
+we highly underestimate the loss by `r round(sum(segment_private$lgd_nom)/10^6-sum(pred*segment_private$loan_amount)/10^6, 2)`
+mio.
+
+We might change the lower bound of our estimations, i.e. we do not predict an LGD
+below a certain value. To still have a data driven decision process, we might set
+this lower bound to the mean of observed LGD per real estate type:
+
+
+```{r}
+pred <- predict(model_private_3, type = "response")
+
+mean_house <- segment_private[segment_private$real_estate_type == "single family house",]$lgd |> mean()
+mean_appartment <- segment_private[segment_private$real_estate_type == "appartment",]$lgd |> mean()
+
+test <- cbind(
+  segment_private,
+  pred
+)
+
+test[test$real_estate_type == "single family house",]$pred <- pmax(test[test$real_estate_type == "single family house",]$pred, mean_house)
+test[test$real_estate_type == "appartment",]$pred <- pmax(test[test$real_estate_type == "appartment",]$pred, mean_appartment)
+
+pred <- test$pred
+
+tobit_diffs <- calculate_differences(segment_private$lgd, pred)
+# tobit_diffs <- calculate_differences(segment_private[segment_private$real_estate_type == "appartment",]$lgd, pred)
+
+plot_differences(tobit_diffs)
+```
+
+```{r}
+plot(tobit_diffs)
+abline(v = which(segment_private$real_estate_type == "single family house")[1])
+```
+
+
+Now we estimate a loss of `r round(sum(pred*segment_private$loan_amount)/10^6, 2)`
+mio. CHF while the observed loss is `r round(sum(segment_private$lgd_nom)/10^6, 2)` mio. CHF, hence
+we still underestimate the loss by `r round(sum(segment_private$lgd_nom)/10^6-sum(pred*segment_private$loan_amount)/10^6, 2)`
+mio. We might switch back to simple linear regression.
+
+### Model 4
+
+Note that the predicted values for single family house is much worse than for
+apartments. Therefore, one might fit a model on the subset for apartment and subset
+for single family house separately:
+
+```{r results='asis'}
+model_private_4_house <- linear_regression_fit(
+  data = segment_private[segment_private$real_estate_type == "single family house",],
+  dependent_variable = "lgd_nom",
+  regressors = c("loan_amount",
+                 "house_collateral_mv",
+                 "additional_collateral_mv"))
+
+model_private_4_appartment <- linear_regression_fit(
+  data = segment_private[segment_private$real_estate_type == "appartment",],
+  dependent_variable = "lgd_nom",
+  regressors = c("loan_amount",
+                 "appartment_collateral_mv",
+                 "additional_collateral_mv"))
+
+# if (knitr::pandoc_to("html")) type <- "html" else type <- "latex"
+# stargazer::stargazer(model_private_1, header = F, type = type)
+```
+
+```{r}
+house <- segment_private[segment_private$real_estate_type == "single family house",]
+house$pred <- pmax(0, predict(model_private_4_house))
+
+appartment <- segment_private[segment_private$real_estate_type == "appartment",]
+appartment$pred <- pmax(0, predict(model_private_4_appartment))
+
+model_4 <- rbind(appartment, house)
+
+
+
+sep_diffs <- calculate_differences(model_4$lgd_nom, model_4$pred)
+plot_differences(sep_diffs)
+mean(sep_diffs^2) |> sqrt()
+```
+
+```{r}
+plot(diffs_model_1, col = "grey")
+abline(v = which(model_4$real_estate_type == "single family house")[1])
+points(sep_diffs)
+legend("topleft", col = c("black", "grey"), pch = 1,
+       legend = c("model fitted separately", "no segmentation"))
+```
+
+Still the same problem...
+
+```{r}
+sum(sep_diffs)
+```
+
+```{r}
+print(paste(
+  "we expect", sum(model_4$pred)/10^6, "mio CHF loss. Real loss was", sum(model_4$lgd_nom)/10^6
+))
+```
+
+We still have the same problem...
+
+<!-- we still overestimate loss but are more accurate -> better model -->
+
+```{r}
+# segment_private_house <- segment_private[segment_private$real_estate_type == "single family house",]
+# hist(segment_private_house$loan_to_mortg, breaks = 50)
+# plot(segment_private_house$loan_to_colla, segment_private_house$lgd)
+# abline(lm(segment_private_house$lgd~segment_private_house$loan_to_colla))
+```
+
+```{r}
+# plot(segment_private_house$loan_amount, segment_private_house$loan_to_colla)
+
+```
+
+
+<!-- TO DO ALS NÄCHSTES: -->
+<!-- SCHAUEN OB DIE DIFFERENZEN IRGENDWIE ZUSAMMENHANG HABEN -->
+<!-- E.G. SCHAUEN OB DIE SCHÄTZUNGEN FÜR GEWISSE DOMAINS (E.G. VON LOAN AMOUNT) -->
+<!-- ZU ODER ABNEHMEN -->
+<!-- EVTL EINEN TEIL DES SAMPLES DANN ABSCHNEIDEN UND DASS DANN IN UI NICHT SCHÄTZEN -->
+
+```{r}
+# plot(model_4$loan_amount, sep_diffs/model_4$loan_amount)
+```
+
+```{r}
+# boxplot(sep_diffs/model_4$loan_amount~model_4$additional_collateral_type)
+```
+
+
+<!-- ### todo private -->
+
+<!-- also implement segm acc to ratio -->
+```{r}
+# segment_private$loan_to_collateral <- segment_private$loan_amount / (segment_private$house_collateral_mv + segment_private$appartment_collateral_mv + segment_private$additional_collateral_mv)
+# hist(segment_private$loan_to_collateral, breaks = 50)
+# abline(v = median(segment_private$loan_to_collateral))
+```
+
+***
+<!-- CORPORATE ---------------------------------------------------------------->
 
 ## Segment 2: Corporate Clients
 
@@ -178,8 +529,8 @@ segment_corporate <- data[data$customer == "corporate",]
 
 First, note that the only real estate type of corporate clients is office building.
 Therefore, the positions only vary in loan amount, the market value of the collateral
-and whether the client provides additional collateral. Therefore, we need further
-logic to segment corporate clients more granular.
+and whether the client provides additional collateral and its corresponding
+market value. Therefore, we need might further logic to segment corporate clients more granular.
 
 Looking at the ratio $\frac{\text{loan amount}}{\text{collateral}}$, we can see
 that not all clients must provide proportionally the same value of collateral.
@@ -187,11 +538,57 @@ that not all clients must provide proportionally the same value of collateral.
 ```{r}
 segment_corporate$loan_to_collateral <- segment_corporate$loan_amount / (segment_corporate$office_collateral_mv + segment_corporate$additional_collateral_mv)
 hist(segment_corporate$loan_to_collateral, breaks = 50)
-abline(v = median(segment_corporate$loan_to_collateral))
+# abline(v = median(segment_corporate$loan_to_collateral))
+abline(v = mean(segment_corporate$loan_to_collateral))
+abline(v = mean(segment_corporate$loan_to_collateral)+2*sd(segment_corporate$loan_to_collateral))
+abline(v = mean(segment_corporate$loan_to_collateral)-2*sd(segment_corporate$loan_to_collateral))
 ```
 
 Economic intuition: due to client specific factors, there could be higher or
-lower risk associated with the position, allowing for lower collateral provided.
+lower risk associated with the position, which require more or less provided
+collateral.
+
+```{r}
+segment_corporate[order(segment_corporate$loan_to_collateral),]$loan_to_collateral |> 
+  plot(ylab = "Loan to collateral ratio",
+       main = "loan to collateral sorted by loan to collateral (asc)")
+abline(v = 20)
+abline(v = 600)
+```
+
+```{r}
+segment_corporate[order(segment_corporate$loan_to_collateral),]$lgd |> 
+  plot(ylab = "loss given default",
+       main = "loss given default sorted by loan to collateral (asc)")
+```
+
+mean lgd for left tail: `r mean(segment_corporate[order(segment_corporate$loan_to_collateral),]$lgd[1:20])`
+
+mean lgd for right tail: `r mean(segment_corporate[order(segment_corporate$loan_to_collateral),]$lgd[600:nrow(segment_corporate)])`
+
+mean lgd over whole sample:`r mean(segment_corporate$lgd)`
+
+```{r}
+means <- c()
+
+for (i in 1:nrow(segment_corporate)) {
+  mean <- mean(segment_corporate[order(segment_corporate$loan_to_collateral),]$lgd[1:i])
+  means <- c(means, mean)
+}
+plot(means, main = "mean lgd from observation 1:n (sorted by loan to collateral)")
+```
+
+```{r}
+means <- c()
+bound <- 50
+for (i in bound:(nrow(segment_corporate)-bound)) {
+  mean <- mean(segment_corporate[order(segment_corporate$loan_to_collateral),]$lgd[(i-bound):(i+bound)])
+  means <- c(means, mean)
+}
+plot(means, main = "mean lgd from observation n-50:n+50 (sorted by loan to collateral)")
+abline(h = mean(segment_corporate$lgd))
+legend("topleft", lty = 1, legend = "mean LGD over whole sample")
+```
 
 Given this logic, there should be a positive relationship between loan to collateral
 ratio and loss given default:
@@ -201,21 +598,30 @@ plot(segment_corporate$loan_to_collateral, segment_corporate$lgd)
 abline(lm(segment_corporate$lgd~segment_corporate$loan_to_collateral))
 ```
 
-Using this logic, the clients are grouped into low risk (high loan to collateral
-ratio), medium risk and high risk (low loan to collateral ratio).
 
-`r paste0(segment_corporate[segment_corporate$loan_to_collateral < 0.75,]$lgd |> mean() |> round(4)*100, "%")`
-is the average LGD for low risk clients, 
-`r paste0(segment_corporate[segment_corporate$loan_to_collateral >= 0.75 & segment_corporate$loan_to_collateral < 0.83,]$lgd |> mean() |> round(4)*100, "%")`
-for medium risk clients and 
-`r paste0(segment_corporate[segment_corporate$loan_to_collateral >= 0.83,]$lgd |> mean() |> round(4)*100, "%")`
-for high risk clients.
+```{r}
+# model_corporate_1 <- linear_regression_fit(
+#   data = segment_corporate,
+#   dependent_variable = "lgd_log",
+#   regressors = c("loan_amount",
+#                  "office_collateral_mv",
+#                  "additional_collateral_mv"))
+# 
+# calculate_rmse(segment_corporate$lgd, exp(linear_regression_predict(model = model_corporate_1, data = segment_corporate))-1)
+```
 
-***todo: maybe also make same for loan amount?*** see model 4
+
 
 ### Model 1
 
-```{r results='asis'}
+First try simple model of regressing on loan amount and
+market value of collateral types on LGD in CHF:
+
+$$
+\text{nominal LGD}_i = \beta_0 + \beta_1*\text{loan amount}_i + \beta_2*\text{MV office}_i + \beta_3*\text{MV additional}_i + \epsilon_i
+$$
+
+```{r}
 model_corporate_1 <- linear_regression_fit(
   data = segment_corporate,
   dependent_variable = "lgd_nom",
@@ -223,14 +629,20 @@ model_corporate_1 <- linear_regression_fit(
                  "office_collateral_mv",
                  "additional_collateral_mv"))
 
-if (knitr::pandoc_to("html")) type <- "html" else type <- "latex"
-stargazer::stargazer(model_corporate_1, header = F, type = type)
+# if (knitr::pandoc_to("html")) type <- "html" else type <- "latex"
+# stargazer::stargazer(model_corporate_1, header = F, type = type)
+summary(model_corporate_1)
 ```
 
+Root Mean Squared Error:
+
 ```{r}
-cross_validation(segment_corporate, 10, "lgd_nom", c("loan_amount",
+cross_validation(segment_corporate, dependent_variable = "lgd_nom",
+                 regressors = c("loan_amount",
                  "office_collateral_mv",
                  "additional_collateral_mv"), convert_nom = T)
+
+# cross_validation(segment_corporate, dependent_variable = "lgd", regressors = "loan_to_collateral")
 ```
 
 ```{r}
@@ -238,132 +650,270 @@ diffs <- calculate_differences(segment_corporate$lgd_nom, linear_regression_pred
 plot_differences(diffs)
 ```
 
+```{r}
+plot(diffs/segment_corporate$loan_amount, main = "Observed - Predicted relative to loan amount")
+```
+
+The prediction performance is not really sufficient... Let's analyze if we can
+find a relationship between the prediction error and some variables.
+
+Look at the relationship between the loan to collateral ratio and the prediction
+error:
+
+```{r}
+segment_corporate$lgd_nom_hat <- linear_regression_predict(model_corporate_1, segment_corporate)
+segment_corporate$error <- segment_corporate$lgd_nom - segment_corporate$lgd_nom_hat
+segment_corporate$error_rel <- segment_corporate$error / segment_corporate$loan_amount
+```
+
+```{r}
+mu <- mean(segment_corporate$loan_to_collateral)
+sigma <- sd(segment_corporate$loan_to_collateral)
+
+temp <- segment_corporate[order(segment_corporate$loan_to_collateral),]
+temp$x <- 1:nrow(temp)
+
+plot(temp$error_rel, main = "Observed - Predicted relative to loan amount, sorted by loan to collateral ratio (asc)", col = "grey")
+points(x = temp[temp$loan_to_collateral > mu+1*sigma,]$x,
+       y = temp[temp$loan_to_collateral > mu+1*sigma,]$error_rel,
+       col = "blue")
+points(x = temp[temp$loan_to_collateral < mu-1*sigma,]$x,
+       y = temp[temp$loan_to_collateral < mu-1*sigma,]$error_rel,
+       col = "darkgreen")
+legend("topright", pch = 1, col = c("blue", "darkgreen"),
+       legend = c("loan to collateral > mean + sigma",
+                  "loan to collateral < mean + sigma"))
+```
+
+It seems that when increasing the loan to collateral ratio, we tend to overestimate
+the loss given default. Ideas to address this:
+
+- discreet loan to collateral to dummy variables
+- segment data set according to loan to collateral and fit model separately
+
+This makes economically sense:
+
+If $\frac{\text{loan amount}}{\text{collateral}}$ higher, we need less collateral
+to cover the loan, meaning the corresponding client might be associated with lower
+risk, hence the expected loss given default should be lower (ceteris paribus).
+If we do not account for this relationship, we ignore the fact that the client
+is of lower risk and therefore has a lower loss given default.
+
+Differentiate by collateral type:
+
+```{r fig.height=12}
+segment_corporate$total_collateral_ratio <- (segment_corporate$office_collateral_mv + segment_corporate$additional_collateral_mv) / segment_corporate$loan_amount
+par(mfrow = c(3,1))
+plot(segment_corporate[order(segment_corporate$loan_to_mortg),]$error_rel, main = "office collateral raio")
+plot(segment_corporate[order(segment_corporate$additional_collateral_ratio),]$error_rel, main = "additional collateral ratio")
+plot(segment_corporate[order(segment_corporate$loan_to_mortg),]$error_rel, main = "total collateral ratio")
+```
+
 ### Model 2
+
+Using this logic, let's first just run a regression of loan to collateral
+on LGD:
+
+$$
+\text{LGD}_i = \beta_0 + \beta_1*\text{Loan to Collateral}_i + \epsilon_i
+$$
 
 ```{r}
 model_corporate_2 <- linear_regression_fit(segment_corporate, "lgd", "loan_to_collateral")
 model_corporate_2 |> summary()
 ```
 
+Root Mean Squared Error:
+
 ```{r}
 cross_validation(segment_corporate, dependent_variable = "lgd", regressors = "loan_to_collateral")
 ```
 
 ```{r}
-diffs <- calculate_differences(segment_corporate$lgd_nom, linear_regression_predict(model_corporate_2, segment_corporate))
+pred <- linear_regression_predict(model_corporate_2, segment_corporate)
+diffs <- calculate_differences(segment_corporate$lgd_nom, pred*segment_corporate$loan_amount)
 plot_differences(diffs)
 ```
 
-Problem: a lot of cases where observed way higher than predicted!
+```{r}
+plot(segment_corporate$lgd-pred)
+```
+
+The fit is not really that much better...
 
 ### Model 3
+
+Now "combine" model 1 and 2 by regressing LGD on loan to collateral,
+office collateral to loan ratio and the additional collateral to loan ratio:
+
+$$
+\text{LGD}_i = \beta_0 + \beta_1*\text{Loan to Collateral}_i +\beta_2*\text{MV Office to Loan}_i + \beta_3*\text{MV additional to Loan}_i + \epsilon_i
+$$
 
 ```{r}
 model_corporate_3 <- linear_regression_fit(segment_corporate, "lgd", c("loan_to_collateral", "office_collateral_ratio", "additional_collateral_ratio"))
 model_corporate_3 |> summary()
 ```
 
+Root Mean Squared Error:
+
 ```{r}
-cross_validation(segment_corporate, 10, "lgd", c("loan_to_collateral", "office_collateral_ratio", "additional_collateral_ratio"))
+cross_validation(segment_corporate, dependent_variable = "lgd",
+                 regressors = c("loan_to_collateral", "office_collateral_ratio", "additional_collateral_ratio"))
 ```
 
 ```{r}
-diffs <- calculate_differences(segment_corporate$lgd_nom, linear_regression_predict(model_corporate_3, segment_corporate))
+diffs <- calculate_differences(segment_corporate$lgd_nom, linear_regression_predict(model_corporate_3, segment_corporate)*segment_corporate$loan_amount)
 plot_differences(diffs)
 ```
 
 ### Model 4
 
-```{r}
+Maybe we get better performance if we further segmentize our sample.
+Let's divide our data set by loan amount (high, medium and low loans):
+
+```{r echo=TRUE}
 threshold_high <- 0.90
 threshold_low <- 0.75
 segment_corporate_high <- segment_corporate[segment_corporate$loan_amount >= quantile(segment_corporate$loan_amount, threshold_high),]
 segment_corporate_medium <- segment_corporate[segment_corporate$loan_amount >= quantile(segment_corporate$loan_amount, threshold_low) & segment_corporate$loan_amount < quantile(segment_corporate$loan_amount, threshold_high),]
 segment_corporate_low <- segment_corporate[segment_corporate$loan_amount < quantile(segment_corporate$loan_amount, threshold_low),]
+hist(segment_corporate$loan_amount, breaks = 100)
+abline(v = quantile(segment_corporate$loan_amount, threshold_high))
+abline(v = quantile(segment_corporate$loan_amount, threshold_low))
 ```
 
-```{r}
+Fit model 3 on each subset separately:
+
+$$
+\text{LGD}_i = \beta_0 + \beta_1*\text{Loan to Collateral}_i +\beta_2*\text{MV Office to Loan}_i + \beta_3*\text{MV additional to Loan}_i + \epsilon_i
+$$
+
+```{r results='asis'}
 model_segment_high <- linear_regression_fit(segment_corporate_high, "lgd_nom", c("loan_amount", "office_collateral_mv", "additional_collateral_mv"))
-model_segment_high |> summary()
-cross_validation(segment_corporate_high, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = T)
-diffs <- calculate_differences(segment_corporate_high$lgd_nom, linear_regression_predict(model_segment_high, segment_corporate_high))
-plot_differences(diffs)
-```
-
-```{r}
 model_segment_medium <- linear_regression_fit(segment_corporate_medium, "lgd_nom", c("loan_amount", "office_collateral_mv", "additional_collateral_mv"))
-model_segment_medium |> summary()
-cross_validation(segment_corporate_medium, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = T)
-diffs <- calculate_differences(segment_corporate_medium$lgd_nom, linear_regression_predict(model_segment_medium, segment_corporate_medium))
-plot_differences(diffs)
+model_segment_low <- linear_regression_fit(segment_corporate_low, "lgd_nom", c("loan_amount", "office_collateral_mv", "additional_collateral_mv"))
+stargazer::stargazer(model_segment_high, model_segment_medium, model_segment_low,
+                     type = type, column.labels = c("highest", "high", "regular"))
+```
+
+
+```{r fig.height=12}
+par(mfrow = c(3, 1))
+diffs_high <- calculate_differences(segment_corporate_high$lgd_nom, linear_regression_predict(model_segment_high, segment_corporate_high))
+
+diffs_medium <- calculate_differences(segment_corporate_medium$lgd_nom, linear_regression_predict(model_segment_medium, segment_corporate_medium))
+
+diffs_low <- calculate_differences(segment_corporate_low$lgd_nom, linear_regression_predict(model_segment_low, segment_corporate_low))
+
+diffs <- c(diffs_high, diffs_medium, diffs_low)
+
+# axlim = c(min(diffs), max(diffs))
+# par(mfrow = c(3, 1))
+# plot_differences(diffs_high, xlim = axlim, main = "observed - predicted for high")
+# plot_differences(diffs_medium, xlim = axlim, main = "observed - predicted for medium")
+# plot_differences(diffs_low, xlim = axlim, main = "observed - predicted for low")
 ```
 
 ```{r}
-model_segment_low <- linear_regression_fit(segment_corporate_low, "lgd_nom", c("loan_amount", "office_collateral_mv", "additional_collateral_mv"))
-model_segment_low |> summary()
-cross_validation(segment_corporate_low, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = T)
-diffs <- calculate_differences(segment_corporate_low$lgd_nom, linear_regression_predict(model_segment_low, segment_corporate_low))
 plot_differences(diffs)
 ```
 
 
-### Model 4
+```{r}
+cat(paste0(
+ "RMSE for high segment: ",
+ round(cross_validation(segment_corporate_high, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = T)*100, 2), "% resp. ",
+ round(cross_validation(segment_corporate_high, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = F), 2), " CHF\n",
+ "RMSE for medium segment: ",
+ round(cross_validation(segment_corporate_medium, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = T)*100, 2), "% resp. ",
+ round(cross_validation(segment_corporate_medium, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = F), 2), " CHF\n",
+ "RMSE for low segment: ",
+ round(cross_validation(segment_corporate_low, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = T)*100, 2), "% resp. ",
+ round(cross_validation(segment_corporate_low, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = F), 2), " CHF\n"
+))
+```
+
+Not sufficient...
+
+### Model 5
+
+Let's use the logic we derived earlier and segmentize the data set in
+low, medium and high risk clients:
 
 ```{r}
 mu <- mean(segment_corporate$loan_to_collateral)
 sigma <- sd(segment_corporate$loan_to_collateral)
-segment_corporate[segment_corporate$loan_to_collateral < mu-sigma,]$lgd |> length()
-segment_corporate[segment_corporate$loan_to_collateral <= mu+sigma & segment_corporate$loan_to_collateral >= mu-sigma,]$lgd |> length()
-segment_corporate[segment_corporate$loan_to_collateral > mu+sigma,]$lgd |> length()
-```
-
-```{r}
 hist(segment_corporate$loan_to_collateral, breaks = 50)
 abline(v = mu-sigma)
 abline(v = mu+sigma)
 ```
 
-```{r}
+
+```{r echo=TRUE}
 segment_corporate_high <- segment_corporate[segment_corporate$loan_to_collateral > mu+sigma,]
 segment_corporate_medium <- segment_corporate[segment_corporate$loan_to_collateral <= sigma+mu & segment_corporate$loan_to_collateral >= mu-sigma,]
 segment_corporate_low <- segment_corporate[segment_corporate$loan_to_collateral < mu-sigma,]
 ```
 
 ```{r}
+# segment_corporate[segment_corporate$loan_to_collateral < mu-sigma,]$lgd |> length()
+# segment_corporate[segment_corporate$loan_to_collateral <= mu+sigma & segment_corporate$loan_to_collateral >= mu-sigma,]$lgd |> length()
+# segment_corporate[segment_corporate$loan_to_collateral > mu+sigma,]$lgd |> length()
+```
+
+### fit model for high loan to collateral (lower risk)
+
+```{r}
 model_segment_high <- linear_regression_fit(segment_corporate_high, "lgd_nom", c("loan_amount", "office_collateral_mv", "additional_collateral_mv"))
 model_segment_high |> summary()
-cross_validation(segment_corporate_high, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = T)
-diffs <- calculate_differences(segment_corporate_high$lgd_nom, linear_regression_predict(model_segment_high, segment_corporate_high))
-plot_differences(diffs)
 ```
+
+RMSE:
+
+```{r}
+cross_validation(segment_corporate_high, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = T)
+```
+
+```{r}
+diffs_high <- calculate_differences(segment_corporate_high$lgd_nom, linear_regression_predict(model_segment_high, segment_corporate_high))
+plot_differences(diffs_high)
+```
+
+### fit model for medium loan to collateral (medium risk)
 
 ```{r}
 model_segment_medium <- linear_regression_fit(segment_corporate_medium, "lgd_nom", c("loan_amount", "office_collateral_mv", "additional_collateral_mv"))
 model_segment_medium |> summary()
-cross_validation(segment_corporate_medium, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = T)
-diffs <- calculate_differences(segment_corporate_medium$lgd_nom, linear_regression_predict(model_segment_medium, segment_corporate_medium))
-plot_differences(diffs)
 ```
+
+RMSE:
+
+```{r}
+cross_validation(segment_corporate_medium, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = T)
+```
+
+```{r}
+diffs_medium <- calculate_differences(segment_corporate_medium$lgd_nom, linear_regression_predict(model_segment_medium, segment_corporate_medium))
+plot_differences(diffs_medium)
+```
+
+### fit model for low loan to collateral (higher risk)
 
 ```{r}
 model_segment_low <- linear_regression_fit(segment_corporate_low, "lgd_nom", c("loan_amount", "office_collateral_mv", "additional_collateral_mv"))
 model_segment_low |> summary()
-cross_validation(segment_corporate_low, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = T)
-diffs <- calculate_differences(segment_corporate_low$lgd_nom, linear_regression_predict(model_segment_low, segment_corporate_low))
-plot_differences(diffs)
 ```
 
+RMSE:
 
 ```{r}
-
-
-actu <- c(segment_corporate_low$lgd_nom,
-          segment_corporate_medium$lgd_nom,
-          segment_corporate_high$lgd_nom)
-pred <- c(linear_regression_predict(model_segment_low, segment_corporate_low),
-          linear_regression_predict(model_segment_medium, segment_corporate_medium),
-          linear_regression_predict(model_segment_high, segment_corporate_high)) 
-calculate_rmse(actu, pred)
-diffs <- calculate_differences(actu, pred)
-plot_differences(diffs)
+cross_validation(segment_corporate_low, dependent_variable = "lgd_nom", regressors = c("loan_amount", "office_collateral_mv", "additional_collateral_mv"), convert_nom = T)
 ```
+
+```{r}
+diffs_low <- calculate_differences(segment_corporate_low$lgd_nom, linear_regression_predict(model_segment_low, segment_corporate_low))
+plot_differences(diffs_low)
+```
+
+
