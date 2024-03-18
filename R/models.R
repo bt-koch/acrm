@@ -39,11 +39,18 @@ calculate_rmle <- function(actual, predicted) {
 }
 
 cross_validation <- function(data, nfolds = 10,
+                             model = "lm",
                              dependent_variable = get_dependent_variable(),
                              regressors = get_predictors(),
-                             convert_nom = F) {
+                             convert_nom = F,
+                             subset = NULL,
+                             y_log = F,
+                             nominal = F,
+                             # only for tobit
+                             tobit_dist = "gaussian") {
   
   result <- c()
+  if (!is.null(subset)) data <- data[subset,]
   data <- data[sample(nrow(data)),]
   folds <- cut(seq(1, nrow(data)), breaks = nfolds, labels = F)
   
@@ -52,12 +59,25 @@ cross_validation <- function(data, nfolds = 10,
     test_set <- data[index,]
     train_set <- data[-index,]
     
-    model <- linear_regression_fit(train_set, dependent_variable, regressors)
-    predictions <- linear_regression_predict(model, test_set)
+    if (model == "lm") {
+      m <- linear_regression_fit(train_set, dependent_variable, regressors)
+      predictions <- linear_regression_predict(m, test_set)
+      predictions <- pmax(0, predictions)
+    } else if (model == "tobit") {
+      m <- AER::tobit(reformulate(regressors, dependent_variable),
+                          data = train_set, #subset = tobit_subset_index,
+                      dist = tobit_dist)
+      predictions <- predict(m, test_set)
+      if (y_log) exp(predictions)-1
+      predictions <- pmax(predictions, 0)
+    }
+    
+    
     
     if (convert_nom) predictions <- predictions / test_set$loan_amount
+    if (nominal) result <- c(result, calculate_rmse(test_set$lgd_nom, predictions))
+    if (!nominal) result <- c(result, calculate_rmse(test_set$lgd, predictions))
     
-    result <- c(result, calculate_rmse(test_set$lgd, predictions))
   }
   
   return(mean(result))
@@ -68,9 +88,10 @@ calculate_differences <- function(actual, predicted) {
   return(difference)
 }
 
-plot_differences <- function(differences, main = "Distribution of observed - predicted LGD",
+plot_differences <- function(differences, main = "Distribution of observed - predicted LGD in CHF",
                              xlim = c(min(differences), max(differences))) {
-  plot(density(differences), main = main, xlim = xlim)
+  # plot(density(differences), main = main, xlim = xlim)
+  hist(differences, main = main, xlim = xlim, breaks = 50)
   abline(v = mean(differences))
   abline(v = median(differences), lty = 2)
   abline(v = -sd(differences), col = "grey")
