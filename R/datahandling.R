@@ -98,3 +98,26 @@ render_value <- function(value, type = "percent") {
   }
   return(value)
 }
+
+
+# segmentation <- function(data) {
+#   
+#   data$loan_to_mortg <- data$loan_amount / data$mortgage_collateral_mv
+#   data$loan_to_colla <- data$loan_amount / (data$mortgage_collateral_mv + data$additional_collateral_mv)
+#   boxplot(data$loan_to_mortg~data$additional_collateral_type)
+#   boxplot(data$loan_to_colla~data$additional_collateral_type)
+#   
+#   private <- data[data$customer == "private",]
+#   private$loan_to_mortg <- private$loan_amount / private$
+#   
+#   
+#   private_house <- private[private$real_estate_type == "single family house",]
+#   private_appartment <- private[private$real_estate_type == "appartment",]
+#   
+#   
+#   private_house$loan_to_mortg <- private_house$loan_amount / private_house$mortgage_collateral_mv
+#   boxplot(private_house$loan_to_mortg~private_house$additional_collateral_type)
+#   
+#   private_house
+#   
+# }
