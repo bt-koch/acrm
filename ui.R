@@ -6,6 +6,7 @@ ui <- dashboardPage(
     sidebarMenu(
       id = "sidebar",
       menuItem("Estimate LGD", tabName = "estimate_lgd", icon = icon("calculator")),
+      menuItem("Simulate LGD", tabName = "simulate_lgd", icon = icon("calculator")),
       menuItem("To Do", tabName = "todo", icon = icon("th"))
     ),
     conditionalPanel(
@@ -47,6 +48,30 @@ ui <- dashboardPage(
         )
       ),
       actionButton("estimate", "Estimate LGD")
+    ),
+    conditionalPanel(
+      "input.sidebar == 'simulate_lgd'",
+      numericInput(
+        inputId = "n_houses",
+        label = "Number of loans for appartments",
+        value = 0,
+        min = 0
+      ),
+      sliderInput(
+        inputId = "pd",
+        label = "Select PD (appartment)",
+        value = 0.5,
+        min = 0,
+        max = 1
+      ),
+      sliderInput(
+        inputId = "ead",
+        label = "Select EAD (% already repaid) (appartment)",
+        value = 0.5,
+        min = 0,
+        max = 1
+      ),
+      actionButton("simulate", "Simulate LGD")
     )
     
   ),
@@ -62,6 +87,22 @@ ui <- dashboardPage(
         ),
         fluidRow(
           valueBoxOutput("lgd_estimation", width = 6)
+        ),
+        fluidRow(
+          p("todo: more validation rules -> not allowed combinations, i.e. private customer with office loan"),
+          p("todo: show LGD also in CHF")
+        )
+      ),
+      tabItem(
+        tabName = "simulate_lgd",
+        fluidRow(
+          h1("show LGD in CHF for total portfolio and for each mortgage type")
+        ),
+        fluidRow(
+          h1("show EL = EAD * PD * LGD whereby EAD and PD from user input (same for all contracts of mortgage type)")
+        ),
+        fluidRow(
+          h1("show interest we would need to cover EL (therefore user input for maturity of loan)")
         )
       ),
       tabItem(
