@@ -129,3 +129,68 @@ linear_regression_get <- function(segment = get_relevant_segment(input)) {
 linear_regression_predict <- function(model = linear_regression_get(segment = get_relevant_segment(read_input(input))), data) {
   predict.lm(model, newdata = data)
 }
+
+# two step method
+
+two_step_estimation <- function(data, customer_type, real_estate_type) {
+  
+  df <- data[
+    data$customer == customer_type &
+      data$real_estate_type == real_estate_type &
+      data$additional_collateral_mv == 0,
+  ]
+  
+  ## step 1
+  # mean approach
+  df$y <- ((1-df$lgd)*df$loan_amount)/df$mortgage_collateral_mv
+  haircut_mortgage_mean <- mean(df$y)
+  
+  # lm nominal
+  df$y <- df$lgd*df$loan_amount
+  step1_m1 <- lm(y~0+offset(1*loan_amount)+mortgage_collateral_mv, data = df)
+  haircut_mortgage_m1 <- step1_m1$coefficients[1]*-1
+  
+  # lm %
+  df$y <- df$lgd
+  df$x <- df$mortgage_collateral_mv/df$loan_amount
+  step2_m2 <- lm(I(y-1)~0+x, data = df)
+  haircut_mortgage_m2 <- step2_m2$coefficients[1]*-1
+  
+  ## step 2
+  df <- data[
+    data$customer == customer_type &
+      data$real_estate_type == real_estate_type &
+      data$additional_collateral_mv > 0,
+  ]
+  
+  # lm nominal
+  df$y <- df$lgd*df$loan_amount+haircut_mortgage_m1*df$mortgage_collateral_mv
+  step2_m1 <- lm(y~0+offset(1*loan_amount)+additional_collateral_mv, data = df)
+  haircut_additional_m1 <- step2_m1$coefficients[1]*-1
+  
+  # lm %
+  df$y <- df$lgd+haircut_mortgage_m2*df$mortgage_collateral_mv/df$loan_amount
+  df$x <- df$additional_collateral_mv/df$loan_amount
+  step2_m2 <- lm(I(y-1)~0+x, data = df)
+  haircut_additional_m2 <- step2_m2$coefficients[1]*-1
+  
+  # result
+  result <- list(
+    customer_type = customer_type,
+    real_estate_type = real_estate_type,
+    mean_approach = list(
+      "haircut_mortgage" = haircut_mortgage_mean,
+      "haircut_additional" = NA
+    ),
+    lm_nominal = list(
+      "haircut_mortgage" = haircut_mortgage_m1,
+      "haircut_additional" = haircut_additional_m1
+    ),
+    lm_percent = list(
+      "haircut_mortgage" = haircut_mortgage_m2,
+      "haircut_additional" = haircut_additional_m2
+    )
+  )
+  return(result)
+}
+
