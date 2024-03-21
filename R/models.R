@@ -131,8 +131,7 @@ linear_regression_predict <- function(model = linear_regression_get(segment = ge
 }
 
 # two step method
-
-two_step_estimation <- function(data, customer_type, real_estate_type) {
+two_step_estimation <- function(data, customer_type, real_estate_type, save = F) {
   
   df <- data[
     data$customer == customer_type &
@@ -191,6 +190,30 @@ two_step_estimation <- function(data, customer_type, real_estate_type) {
       "haircut_additional" = haircut_additional_m2
     )
   )
-  return(result)
+  
+  if (save) {
+    saveRDS(
+      object = result,
+      file = paste0("calibrated_models/", customer_type, "_", real_estate_type, ".rds")
+    )
+  } else {
+    return(result)
+  }
 }
 
+two_step_estimation_calibrate <- function() {
+  data <- read_data()
+  two_step_estimation(data, "private", "appartment", save = T)
+  two_step_estimation(data, "private", "single family house", save = T)
+  two_step_estimation(data, "corporate", "office building", save = T)
+}
+
+two_step_estimation_get <- function(customer_type, real_estate_type, specification = "lm_percent") {
+  model <- readRDS(paste0("calibrated_models/", customer_type, "_", real_estate_type, ".rds"))
+  return(list(
+    haircut_mortgage = model[[specification]]$haircut_mortgage,
+    haircut_additional = model[[specification]]$haircut_additional
+  ))
+}
+
+two_step_estimation_predict <- function()
