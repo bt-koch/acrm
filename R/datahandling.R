@@ -110,9 +110,15 @@ render_value <- function(value, type = "percent") {
     value <- round(value*100, 2)
     value <- paste0(value, "%")
   } else if (type == "CHF") {
-    value <- round(value*20)/20
+    if (value < 999999.975) {
+      value <- round(value*20)/20
+      unit <- ""
+    } else {
+      value <- round(value/10^6, 2)
+      unit <- "mio."
+    }
     value <- format(value, nsmall = 2, big.mark = "'", scientific = F)
-    value <- paste(value, "CHF")
+    value <- paste(value, unit, "CHF")
   }
   return(value)
 }
