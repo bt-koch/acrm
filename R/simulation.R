@@ -18,7 +18,7 @@ draw_loans <- function(n_houses, n_appartments, n_offices) {
     simulated_offices
   )
   
-  simulation$lgd <- NA
+  if (nrow(simulation) > 0) simulation$lgd <- NA
   
   return(simulation)
   
@@ -30,7 +30,7 @@ estimate_pf_lgd <- function(data) {
   model_appart <- two_step_estimation_get("private", "appartment")
   model_office <- two_step_estimation_get("corporate", "office building")
   
-  data$haircut_mortgage <- data$haircut_additional <- NA
+  if (nrow(data) > 0) data$haircut_mortgage <- data$haircut_additional <- NA
   
   if ("single family house" %in% data$real_estate_type) {
     data[data$real_estate_type == "single family house",]$haircut_mortgage <- model_houses$haircut_mortgage
