@@ -8,9 +8,9 @@ draw_loans <- function(n_houses, n_appartments, n_offices) {
   appartments <- data[data$real_estate_type == "appartment",]
   offices <- data[data$real_estate_type == "office building",]
   
-  simulated_houses <- houses[sample(nrow(houses), n_houses),]
-  simulated_appartments <- appartments[sample(nrow(appartments), n_appartments),]
-  simulated_offices <- offices[sample(nrow(offices), n_offices),]
+  simulated_houses <- houses[sample(nrow(houses), n_houses, replace = T),]
+  simulated_appartments <- appartments[sample(nrow(appartments), n_appartments, replace = T),]
+  simulated_offices <- offices[sample(nrow(offices), n_offices, replace = T),]
   
   simulation <- rbind(
     simulated_houses,
@@ -24,7 +24,6 @@ draw_loans <- function(n_houses, n_appartments, n_offices) {
   
 }
 
-# TODO: function to estimate all LGDs
 estimate_pf_lgd <- function(data) {
   
   model_houses <- two_step_estimation_get("private", "single family house")
@@ -46,6 +45,7 @@ estimate_pf_lgd <- function(data) {
     data$haircut_additional*(data$additional_collateral_mv/data$loan_amount)
   
   data$lgd <- pmax(data$lgd, 0)
+  data$lgd_nom <- data$lgd * data$loan_amount
   
   return(data)
   
