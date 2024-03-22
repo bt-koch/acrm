@@ -32,14 +32,20 @@ estimate_pf_lgd <- function(data) {
   
   data$haircut_mortgage <- data$haircut_additional <- NA
   
-  data[data$real_estate_type == "single family house",]$haircut_mortgage <- model_houses$haircut_mortgage
-  data[data$real_estate_type == "single family house",]$haircut_additional <- model_houses$haircut_additional
+  if ("single family house" %in% data$real_estate_type) {
+    data[data$real_estate_type == "single family house",]$haircut_mortgage <- model_houses$haircut_mortgage
+    data[data$real_estate_type == "single family house",]$haircut_additional <- model_houses$haircut_additional
+  }
   
-  data[data$real_estate_type == "appartment",]$haircut_mortgage <- model_appart$haircut_mortgage
-  data[data$real_estate_type == "appartment",]$haircut_additional <- model_appart$haircut_additional
+  if ("appartment" %in% data$real_estate_type) {
+    data[data$real_estate_type == "appartment",]$haircut_mortgage <- model_appart$haircut_mortgage
+    data[data$real_estate_type == "appartment",]$haircut_additional <- model_appart$haircut_additional
+  }
   
-  data[data$real_estate_type == "office building",]$haircut_mortgage <- model_office$haircut_mortgage
-  data[data$real_estate_type == "office building",]$haircut_additional <- model_office$haircut_additional
+  if ("office building" %in% data$real_estate_type) {
+    data[data$real_estate_type == "office building",]$haircut_mortgage <- model_office$haircut_mortgage
+    data[data$real_estate_type == "office building",]$haircut_additional <- model_office$haircut_additional
+  }
   
   data$lgd <- 1-data$haircut_mortgage*(data$mortgage_collateral_mv/data$loan_amount)-
     data$haircut_additional*(data$additional_collateral_mv/data$loan_amount)
