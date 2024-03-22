@@ -109,6 +109,10 @@ render_value <- function(value, type = "percent") {
   if (type == "percent") {
     value <- round(value*100, 2)
     value <- paste0(value, "%")
+  } else if (type == "CHF") {
+    value <- round(value*20)/20
+    value <- format(value, nsmall = 2, big.mark = "'", scientific = F)
+    value <- paste(value, "CHF")
   }
   return(value)
 }
