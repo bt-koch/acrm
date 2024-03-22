@@ -57,20 +57,34 @@ get_relevant_segment <- function(input = read_input(input)) {
   }
 }
 
-read_input <- function(input) {
-  df <- data.frame(
-    customer = input$customer_type,
-    real_estate_type = input$real_estate_type,
-    loan_amount = input$loan_amount,
-    mortgage_collateral_mv = input$mortgage_collateral_mv,
-    additional_collateral_mv = input$additional_collateral_mv,
-    additional_collateral_type = input$additional_collateral_type
-  )
+read_input <- function(input, tab = "estimate_lgd") {
   
-  if (input$additional_collateral_type == "none") {
-    df$additional_collateral_mv <- 0
+  if (tab == "estimate_lgd") {
+    df <- data.frame(
+      customer = input$customer_type,
+      real_estate_type = input$real_estate_type,
+      loan_amount = input$loan_amount,
+      mortgage_collateral_mv = input$mortgage_collateral_mv,
+      additional_collateral_mv = input$additional_collateral_mv,
+      additional_collateral_type = input$additional_collateral_type
+    )
+    
+    if (input$additional_collateral_type == "none") {
+      df$additional_collateral_mv <- 0
+    }
+  } else if (tab == "simulate_lgd") {
+    df <- data.frame(
+      n_houses = ifelse(is.na(input$n_houses), 0, input$n_houses),
+      pd_houses = input$pd_houses,
+      ead_houses = input$ead_houses,
+      n_appartments = ifelse(is.na(input$n_appartments), 0, input$n_appartments),
+      pd_appartments = input$pd_appartments,
+      ead_appartments = input$ead_appartments,
+      n_offices = ifelse(is.na(input$n_offices), 0, input$n_offices),
+      pd_offices = input$pd_offices,
+      ead_offices = input$ead_offices
+    )
   }
-  
   return(df)
 }
 
