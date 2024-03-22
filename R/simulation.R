@@ -51,4 +51,24 @@ estimate_pf_lgd <- function(data) {
   
 }
 
+prepare_simulation_result <- function(data, level) {
+  
+  if (level == "portfolio") {
+    index <- rep(T, nrow(data))
+  } else if (level == "house") {
+    index <- data$real_estate_type == "single family house"
+  } else if (level == "appartment") {
+    index <- data$real_estate_type == "appartment"
+  } else if (level == "office") {
+    index <- data$real_estate_type == "office building"
+  }
+  
+  result <- paste0(
+    render_value(sum(data[index,]$lgd_nom), type = "CHF"),
+    " (", render_value(sum(data[index,]$lgd_nom)/sum(data[index,]$loan_amount)), ")"
+  )
+  
+  return(result)
+}
+
 
