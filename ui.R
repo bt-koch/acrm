@@ -166,12 +166,12 @@ ui <- dashboardPage(
       tabItem(
         tabName = "simulate_lgd",
         fluidRow(
-          valueBoxOutput("pf_lgd", width = 9)
+          valueBoxOutput("pf_lgd", width = 12)
         ),
         fluidRow(
-          valueBoxOutput("houses_lgd", width = 3),
-          valueBoxOutput("appartments_lgd", width = 3),
-          valueBoxOutput("offices_lgd", width = 3)
+          valueBoxOutput("houses_lgd", width = 4),
+          valueBoxOutput("appartments_lgd", width = 4),
+          valueBoxOutput("offices_lgd", width = 4)
         ),
         fluidRow(
           h1("show LGD in CHF for total portfolio and for each mortgage type"),
