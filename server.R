@@ -49,7 +49,6 @@ server <- function(input, output) {
       
     } else {
       estimated_lgd <- two_step_estimation_estimate(input)
-
       output$lgd_estimation <- renderValueBox({
         valueBox(
           estimated_lgd |> 
@@ -61,7 +60,19 @@ server <- function(input, output) {
         )
       })
     }
+  })
+  
+  observeEvent(input$simulate, {
     
+    
+    output$lgd_simulation <- renderValueBox({
+      valueBox(
+        rnorm(1),
+        "simulated number",
+        icon = icon("calculator"),
+        color = "purple"
+      )
+    })
     
   })
   

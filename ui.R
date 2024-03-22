@@ -1,13 +1,13 @@
 library(shinydashboard)
 
 ui <- dashboardPage(
-  dashboardHeader(title = "MVP: LGD-Modeling"),
+  dashboardHeader(title = "MVP: LGD-Modeling", titleWidth = 300),
   dashboardSidebar(
+    width = 300,
     sidebarMenu(
       id = "sidebar",
-      menuItem("Estimate LGD", tabName = "estimate_lgd", icon = icon("calculator")),
-      menuItem("Simulate LGD", tabName = "simulate_lgd", icon = icon("calculator")),
-      menuItem("To Do", tabName = "todo", icon = icon("th"))
+      menuItem("Estimate loan-level LGD", tabName = "estimate_lgd", icon = icon("calculator")),
+      menuItem("Simulate Portfolio LGD", tabName = "simulate_lgd", icon = icon("calculator"))
     ),
     conditionalPanel(
       "input.sidebar == 'estimate_lgd'",
@@ -23,13 +23,13 @@ ui <- dashboardPage(
       ),
       numericInput(
         inputId = "loan_amount",
-        label = "Loan amount to customer (in CHF)",
+        label = "Loan amount to customer (CHF)",
         value = 6130452,
         min = 0
       ),
       numericInput(
         inputId = "mortgage_collateral_mv",
-        label = "Market value of mortgage collateral (in CHF)",
+        label = "Market value mortgage collateral (CHF)",
         value = 7520761,
         min = 0
       ),
@@ -42,7 +42,7 @@ ui <- dashboardPage(
         "input.additional_collateral_type != 'none'",
         numericInput(
           inputId = "additional_collateral_mv",
-          label = "Market value of additional collateral (in CHF)",
+          label = "Market value additional collateral (CHF)",
           value = 311572,
           min = 0
         )
@@ -51,25 +51,95 @@ ui <- dashboardPage(
     ),
     conditionalPanel(
       "input.sidebar == 'simulate_lgd'",
+      hr(style="border-color: grey"),
+      h5(style = "position: relative;left: 15px;", strong("Single family houses")),
       numericInput(
         inputId = "n_houses",
-        label = "Number of loans for appartments",
+        label = "Number of loans",
         value = 0,
         min = 0
       ),
-      sliderInput(
-        inputId = "pd",
-        label = "Select PD (appartment)",
-        value = 0.5,
-        min = 0,
-        max = 1
+      fluidRow(
+        column(6,
+          sliderInput(
+            inputId = "pd_houses",
+            label = "PD",
+            value = 0.5,
+            min = 0,
+            max = 1,
+            ticks = F
+          )
+        ),
+        column(6,
+          sliderInput(
+            inputId = "ead_houses",
+            label = "EAD",
+            value = 0.5,
+            min = 0,
+            max = 1,
+            ticks = F
+          )
+        )
       ),
-      sliderInput(
-        inputId = "ead",
-        label = "Select EAD (% already repaid) (appartment)",
-        value = 0.5,
-        min = 0,
-        max = 1
+      hr(style="border-color: grey"),
+      h5(style = "position: relative;left: 15px;", strong("Apartments")),
+      numericInput(
+        inputId = "n_apartments",
+        label = "Number of loans",
+        value = 0,
+        min = 0
+      ),
+      fluidRow(
+        column(6,
+               sliderInput(
+                 inputId = "pd_apartments",
+                 label = "PD",
+                 value = 0.5,
+                 min = 0,
+                 max = 1,
+                 ticks = F
+               )
+        ),
+        column(6,
+               sliderInput(
+                 inputId = "ead_apartments",
+                 label = "EAD",
+                 value = 0.5,
+                 min = 0,
+                 max = 1,
+                 ticks = F
+               )
+        )
+      ),
+      hr(style="border-color: grey"),
+      h5(style = "position: relative;left: 15px;", strong("Office Buildings")),
+      numericInput(
+        inputId = "n_offices",
+        label = "Number of loans",
+        value = 0,
+        min = 0
+      ),
+      fluidRow(
+        column(6,
+               sliderInput(
+                 inputId = "pd_offices",
+                 label = "PD",
+                 value = 0.5,
+                 min = 0,
+                 max = 1,
+                 ticks = F
+               )
+        ),
+        column(6,
+               sliderInput(
+                 inputId = "ead_offices",
+                 label = "EAD",
+                 value = 0.5,
+                 min = 0,
+                 max = 1,
+                 ticks = F
+               )
+        )
       ),
       actionButton("simulate", "Simulate LGD")
     )
@@ -103,42 +173,10 @@ ui <- dashboardPage(
         ),
         fluidRow(
           h1("show interest we would need to cover EL (therefore user input for maturity of loan)")
+        ),
+        fluidRow(
+          valueBoxOutput("lgd_simulation", width = 6)
         )
-      ),
-      tabItem(
-        tabName = "todo",
-        h2("To Do's:"),
-        p("1. Model specification"),
-        tags$ul(
-          tags$li("Resolve problem with multicollinearity"),
-          tags$li("Implement more models",
-                  br(),
-                  img(src='images/lgd_models.png', align = "left",
-                      height="25%", width="25%"), 
-                  )
-        ),
-        div(style = "height:325px"),
-        p("2. Model training"),
-        tags$ul(
-          tags$li("Implement Cross Validation")
-        ),
-        p("3. How to evaluate models?"),
-        tags$ul(
-          tags$li("Using Root Mean Squared Error?"),
-          tags$li("Root Mean Squared Logarithmic Error?")
-        ),
-        p("4. Reestimate LGD only upon button press"),
-        h2("Ideas:"),
-        p("1. Calculate DT LGD?"),
-        p("2. Evaluate implications on regulatory capital?"),
-        p("3. Try to calculate proposed interest rate for loan"),
-        tags$ul(
-          tags$li("to cover expected losses?"),
-          tags$li("to cover costs from minimal required capital?")
-        ),
-        p("4. Somehow simulate portfolio over time?"),
-        p("5. Implement decision rule: should loan be approved? with which interest rate?"),
-        p("6. Show model performance metrics in the app?")
       )
     )
   )
