@@ -48,11 +48,8 @@ server <- function(input, output) {
       })
       
     } else {
-      estimated_lgd <- linear_regression_predict(
-        model = linear_regression_get(segment = get_relevant_segment(read_input(input))),
-        data = model_input
-      ) |> scale_prediction(input = input)
-      
+      estimated_lgd <- two_step_estimation_estimate(input)
+
       output$lgd_estimation <- renderValueBox({
         valueBox(
           estimated_lgd |> 
