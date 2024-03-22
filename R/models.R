@@ -216,4 +216,19 @@ two_step_estimation_get <- function(customer_type, real_estate_type, specificati
   ))
 }
 
-two_step_estimation_predict <- function()
+two_step_estimation_estimate <- function(input) {
+  input <- read_input(input)
+  customer_type <- input$customer
+  real_estate_type <- input$real_estate_type
+  mortgage_collateral_mv <- input$mortgage_collateral_mv
+  additional_collateral_mv <- input$additional_collateral_mv
+  loan_amount <- input$loan_amount
+
+  model <- two_step_estimation_get(customer_type, real_estate_type)
+  haircut_mortgage <- model$haircut_mortgage
+  haircut_additional <- model$haircut_additional
+  
+  lgd <- 1-haircut_mortgage*(mortgage_collateral_mv/loan_amount)-
+    haircut_additional*(additional_collateral_mv/loan_amount)
+  return(lgd)
+}
