@@ -8,9 +8,7 @@ get_predictors <- function() {
 }
 
 cap_prediction <- function(prediction) {
-  capped_prediction <- max(prediction, 0.05)
-  capped_prediction <- min(capped_prediction, 1)
-  return(capped_prediction)
+  return(max(min(prediction, 1), 0))
 }
 
 scale_prediction <- function(prediction, input) {
