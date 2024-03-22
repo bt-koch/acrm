@@ -48,12 +48,18 @@ server <- function(input, output) {
       })
       
     } else {
-      estimated_lgd <- two_step_estimation_estimate(input)
+      estimated_lgd <- two_step_estimation_estimate(input) |> 
+        cap_prediction()
+      
+      estimated_lgd_nom <- estimated_lgd * model_input$loan_amount
+      
+      
       output$lgd_estimation <- renderValueBox({
         valueBox(
-          estimated_lgd |> 
-            cap_prediction() |>
-            render_value(),
+          paste0(
+            render_value(estimated_lgd),
+            " (", render_value(estimated_lgd_nom, type = "CHF"), ")"
+          ),
           "Loss Given Default",
           icon = icon("calculator"),
           color = "purple"
@@ -64,13 +70,39 @@ server <- function(input, output) {
   
   observeEvent(input$simulate, {
     
+    output$pf_lgd <- renderValueBox({
+      valueBox(
+        paste(rnorm(1), " any stupid text"),
+        "Overall Loss Given Default",
+        icon = icon("list"),
+        color = "purple"
+      )
+    })
     
-    output$lgd_simulation <- renderValueBox({
+    output$houses_lgd <- renderValueBox({
       valueBox(
         rnorm(1),
-        "simulated number",
-        icon = icon("calculator"),
-        color = "purple"
+        "Loss Given Default for houses",
+        icon = icon("house-chimney"),
+        color = "aqua"
+      )
+    })
+    
+    output$appartments_lgd <- renderValueBox({
+      valueBox(
+        rnorm(1),
+        "Loss Given Default for apartments",
+        icon = icon("building"),
+        color = "blue"
+      )
+    })
+    
+    output$offices_lgd <- renderValueBox({
+      valueBox(
+        rnorm(1),
+        "Loss Given Default for offices",
+        icon = icon("city"),
+        color = "light-blue"
       )
     })
     
