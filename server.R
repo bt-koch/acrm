@@ -53,7 +53,6 @@ server <- function(input, output) {
       
       estimated_lgd_nom <- estimated_lgd * model_input$loan_amount
       
-      
       output$lgd_estimation <- renderValueBox({
         valueBox(
           paste0(
@@ -79,7 +78,6 @@ server <- function(input, output) {
     )
     
     simulated_data <- estimate_pf_lgd(simulated_data)
-    
     
     output$pf_lgd <- renderValueBox({
       valueBox(
