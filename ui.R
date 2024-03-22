@@ -1,8 +1,9 @@
 library(shinydashboard)
 
 ui <- dashboardPage(
-  dashboardHeader(title = "MVP: LGD-Modeling", titleWidth = 300),
+  dashboardHeader(title = "Loss Given Default Modeling", titleWidth = 300),
   dashboardSidebar(
+    tags$style("@import url(https://use.fontawesome.com/releases/v6.5.1/css/all.css);"),
     width = 300,
     sidebarMenu(
       id = "sidebar",
@@ -159,12 +160,19 @@ ui <- dashboardPage(
           valueBoxOutput("lgd_estimation", width = 6)
         ),
         fluidRow(
-          p("todo: more validation rules -> not allowed combinations, i.e. private customer with office loan"),
-          p("todo: show LGD also in CHF")
+          p("todo: more validation rules -> not allowed combinations, i.e. private customer with office loan")
         )
       ),
       tabItem(
         tabName = "simulate_lgd",
+        fluidRow(
+          valueBoxOutput("pf_lgd", width = 9)
+        ),
+        fluidRow(
+          valueBoxOutput("houses_lgd", width = 3),
+          valueBoxOutput("appartments_lgd", width = 3),
+          valueBoxOutput("offices_lgd", width = 3)
+        ),
         fluidRow(
           h1("show LGD in CHF for total portfolio and for each mortgage type"),
           p("show LGD of current PF and LGD if we would increase PF by n simulated loans")
@@ -174,9 +182,6 @@ ui <- dashboardPage(
         ),
         fluidRow(
           h1("show interest we would need to cover EL (therefore user input for maturity of loan)")
-        ),
-        fluidRow(
-          valueBoxOutput("lgd_simulation", width = 6)
         )
       )
     )
