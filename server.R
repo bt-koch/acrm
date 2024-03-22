@@ -70,9 +70,20 @@ server <- function(input, output) {
   
   observeEvent(input$simulate, {
     
+    simulation_input <- read_input(input, tab = "simulate_lgd")
+    
+    simulated_data <- draw_loans(
+      n_houses = simulation_input$n_houses,
+      n_appartments = simulation_input$n_appartments,
+      n_offices = simulation_input$n_offices
+    )
+    
+    simulated_data <- estimate_pf_lgd(simulated_data)
+    
+    
     output$pf_lgd <- renderValueBox({
       valueBox(
-        paste(rnorm(1), " any stupid text"),
+        prepare_simulation_result(simulated_data, "portfolio"),
         "Overall Loss Given Default",
         icon = icon("list"),
         color = "purple"
@@ -81,7 +92,7 @@ server <- function(input, output) {
     
     output$houses_lgd <- renderValueBox({
       valueBox(
-        rnorm(1),
+        tags$p(prepare_simulation_result(simulated_data, "house"), style = "font-size: 2vw;"),
         "Loss Given Default for houses",
         icon = icon("house-chimney"),
         color = "aqua"
@@ -90,7 +101,7 @@ server <- function(input, output) {
     
     output$appartments_lgd <- renderValueBox({
       valueBox(
-        rnorm(1),
+        tags$p(prepare_simulation_result(simulated_data, "appartment"), style = "font-size: 2vw;"),
         "Loss Given Default for apartments",
         icon = icon("building"),
         color = "blue"
@@ -99,7 +110,7 @@ server <- function(input, output) {
     
     output$offices_lgd <- renderValueBox({
       valueBox(
-        rnorm(1),
+        tags$p(prepare_simulation_result(simulated_data, "office"), style = "font-size: 2vw;"),
         "Loss Given Default for offices",
         icon = icon("city"),
         color = "light-blue"
