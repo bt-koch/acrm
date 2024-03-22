@@ -84,7 +84,7 @@ ui <- dashboardPage(
       hr(style="border-color: grey"),
       h5(style = "position: relative;left: 15px;", strong("Apartments")),
       numericInput(
-        inputId = "n_apartments",
+        inputId = "n_appartments",
         label = "Number of loans",
         value = 0,
         min = 0
@@ -92,7 +92,7 @@ ui <- dashboardPage(
       fluidRow(
         column(6,
                sliderInput(
-                 inputId = "pd_apartments",
+                 inputId = "pd_appartments",
                  label = "PD",
                  value = 0.5,
                  min = 0,
@@ -102,7 +102,7 @@ ui <- dashboardPage(
         ),
         column(6,
                sliderInput(
-                 inputId = "ead_apartments",
+                 inputId = "ead_appartments",
                  label = "EAD",
                  value = 0.5,
                  min = 0,
@@ -166,7 +166,8 @@ ui <- dashboardPage(
       tabItem(
         tabName = "simulate_lgd",
         fluidRow(
-          h1("show LGD in CHF for total portfolio and for each mortgage type")
+          h1("show LGD in CHF for total portfolio and for each mortgage type"),
+          p("show LGD of current PF and LGD if we would increase PF by n simulated loans")
         ),
         fluidRow(
           h1("show EL = EAD * PD * LGD whereby EAD and PD from user input (same for all contracts of mortgage type)")
