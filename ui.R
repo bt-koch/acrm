@@ -160,7 +160,8 @@ ui <- dashboardPage(
           valueBoxOutput("lgd_estimation", width = 6)
         ),
         fluidRow(
-          p("todo: more validation rules -> not allowed combinations, i.e. private customer with office loan")
+          p("todo: more validation rules -> not allowed combinations, i.e. private customer with office loan"),
+          p("todo: show expected revenue from liquidation of collateral")
         )
       ),
       tabItem(
@@ -174,14 +175,10 @@ ui <- dashboardPage(
           valueBoxOutput("offices_lgd", width = 4)
         ),
         fluidRow(
-          h1("show LGD in CHF for total portfolio and for each mortgage type"),
-          p("show LGD of current PF and LGD if we would increase PF by n simulated loans")
-        ),
-        fluidRow(
-          h1("show EL = EAD * PD * LGD whereby EAD and PD from user input (same for all contracts of mortgage type)")
-        ),
-        fluidRow(
-          h1("show interest we would need to cover EL (therefore user input for maturity of loan)")
+          h3("potential todos/ideas if I have time:"),
+          p("show LGD of current PF and LGD if we would increase PF by n simulated loans"),
+          p("show EL = EAD * PD * LGD whereby EAD and PD from user input (same for all contracts of mortgage type)"),
+          p("show interest we would need to cover EL (therefore user input for maturity of loan)")
         )
       )
     )
