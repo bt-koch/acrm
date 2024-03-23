@@ -171,6 +171,26 @@ two_step_estimation <- function(data, customer_type, real_estate_type, save = F)
   step2_m2 <- lm(I(y-1)~0+x, data = df)
   haircut_additional_m2 <- step2_m2$coefficients[1]*-1
   
+  ## ad hoc coefficients
+  adhoc_coefs <- list(
+    "private" = list(
+      "appartment" = list(
+        "haircut_mortgage" = 0.77,
+        "haircut_additional" = 0.82
+      ),
+      "single family house" = list(
+        "haircut_mortgage" = 0.72,
+        "haircut_additional" = 0.86
+      )
+    ),
+    "corporate" = list(
+      "office building" = list(
+        "haircut_mortgage" = 0.65,
+        "haircut_additional" = 0.93
+      )
+    )
+  )
+  
   # result
   result <- list(
     customer_type = customer_type,
@@ -186,18 +206,24 @@ two_step_estimation <- function(data, customer_type, real_estate_type, save = F)
     lm_percent = list(
       "haircut_mortgage" = haircut_mortgage_m2,
       "haircut_additional" = haircut_additional_m2
+    ),
+    adhoc = list(
+      "haircut_mortgage" = adhoc_coefs[[customer_type]][[real_estate_type]]$haircut_mortgage,
+      "haircut_additional" = adhoc_coefs[[customer_type]][[real_estate_type]]$haircut_additional
     )
   )
   
   if (save) {
     saveRDS(
       object = result,
-      file = paste0("calibrated_models/", customer_type, "_", real_estate_type, ".rds")
+      file = paste0("calibrated_models/", customer_type, "_", gsub(" ", "_", real_estate_type), ".rds")
     )
   } else {
     return(result)
   }
 }
+
+
 
 two_step_estimation_calibrate <- function() {
   data <- read_data()
@@ -207,7 +233,7 @@ two_step_estimation_calibrate <- function() {
 }
 
 two_step_estimation_get <- function(customer_type, real_estate_type, specification = "lm_percent") {
-  model <- readRDS(paste0("calibrated_models/", customer_type, "_", real_estate_type, ".rds"))
+  model <- readRDS(paste0("calibrated_models/", customer_type, "_", gsub(" ", "_", real_estate_type), ".rds"))
   return(list(
     haircut_mortgage = model[[specification]]$haircut_mortgage,
     haircut_additional = model[[specification]]$haircut_additional
