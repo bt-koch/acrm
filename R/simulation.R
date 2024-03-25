@@ -47,7 +47,7 @@ estimate_pf_lgd <- function(data, spec = "lm_percent") {
   data$lgd <- 1-data$haircut_mortgage*(data$mortgage_collateral_mv/data$loan_amount)-
     data$haircut_additional*(data$additional_collateral_mv/data$loan_amount)
   
-  data$lgd <- pmax(data$lgd, 0)
+  data$lgd <- pmin(pmax(data$lgd, 0), 1)
   data$lgd_nom <- data$lgd * data$loan_amount
   
   return(data)

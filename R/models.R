@@ -253,6 +253,6 @@ two_step_estimation_estimate <- function(input, cap_prediction = TRUE) {
   lgd <- 1-haircut_mortgage*(mortgage_collateral_mv/loan_amount)-
     haircut_additional*(additional_collateral_mv/loan_amount)
   
-  if (cap_prediction) lgd <- cap_prediction(lgd)
+  if (cap_prediction) pmin(pmax(lgd, 0), 1)
   return(lgd)
 }
