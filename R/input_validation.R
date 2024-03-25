@@ -30,6 +30,28 @@ validate_input <- function(user_input) {
     )
   }
   
+  if (user_input$customer == "private" & 
+      (!user_input$real_estate_type %in% c("appartment", "single family house") |
+       !user_input$additional_collateral_type %in% c("retirement account", "none"))
+      ) {
+    validation[[length(validation)+1]] <- list(
+      type = "error",
+      message = paste("Invalid combination. For private clients, LGD can only be estimated for",
+                      "appartments and single family houses and only for retirement account or no additional collateral.")
+    )
+  }
+  
+  if (user_input$customer == "corporate" & 
+      (!user_input$real_estate_type %in% c("office building") |
+       !user_input$additional_collateral_type %in% c("cash account", "none"))
+  ) {
+    validation[[length(validation)+1]] <- list(
+      type = "error",
+      message = paste("Invalid combination. For corporate clients, LGD can only be estimated for",
+                      "office buildings and only for cash account or no additional collateral.")
+    )
+  }
+  
   if (!length(validation)) {
     validation[[1]] <- list(
       type = "success",
