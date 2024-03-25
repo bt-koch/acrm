@@ -1,6 +1,3 @@
-
-# TODO: function to read relevant input: maybe modify read_input in R/datahandling.R
-
 draw_loans <- function(n_houses, n_appartments, n_offices) {
   
   data <- read_data()
