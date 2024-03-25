@@ -48,8 +48,7 @@ server <- function(input, output) {
       })
       
     } else {
-      estimated_lgd <- two_step_estimation_estimate(input) |> 
-        cap_prediction()
+      estimated_lgd <- two_step_estimation_estimate(input)
       estimated_lgd_nom <- estimated_lgd * model_input$loan_amount
       
       output$lgd_estimation <- renderValueBox({

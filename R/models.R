@@ -223,8 +223,6 @@ two_step_estimation <- function(data, customer_type, real_estate_type, save = F)
   }
 }
 
-
-
 two_step_estimation_calibrate <- function() {
   data <- read_data()
   two_step_estimation(data, "private", "appartment", save = T)
@@ -240,7 +238,7 @@ two_step_estimation_get <- function(customer_type, real_estate_type, specificati
   ))
 }
 
-two_step_estimation_estimate <- function(input) {
+two_step_estimation_estimate <- function(input, cap_prediction = TRUE) {
   input <- read_input(input)
   customer_type <- input$customer
   real_estate_type <- input$real_estate_type
@@ -254,5 +252,7 @@ two_step_estimation_estimate <- function(input) {
   
   lgd <- 1-haircut_mortgage*(mortgage_collateral_mv/loan_amount)-
     haircut_additional*(additional_collateral_mv/loan_amount)
+  
+  if (cap_prediction) lgd <- cap_prediction(lgd)
   return(lgd)
 }
