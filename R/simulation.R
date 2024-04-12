@@ -74,4 +74,3 @@ prepare_simulation_result <- function(data, level) {
   return(result)
 }
 
-

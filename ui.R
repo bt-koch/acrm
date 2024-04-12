@@ -158,14 +158,19 @@ ui <- dashboardPage(
         ),
         fluidRow(
           valueBoxOutput("lgd_estimation", width = 6)
-        ),
-        fluidRow(
-          p("todo: more validation rules -> not allowed combinations, i.e. private customer with office loan"),
-          p("todo: show expected revenue from liquidation of collateral")
         )
       ),
       tabItem(
         tabName = "simulate_lgd",
+        fluidRow(
+          infoBox(
+            "warning",
+            "Each calculation draws loans from dataset randomly with replacement, hence result changes in each calculation.",
+            icon = icon("exclamation"),
+            color = "yellow",
+            width = 12
+          )
+        ),
         fluidRow(
           valueBoxOutput("pf_lgd", width = 12)
         ),
@@ -173,12 +178,6 @@ ui <- dashboardPage(
           valueBoxOutput("houses_lgd", width = 4),
           valueBoxOutput("appartments_lgd", width = 4),
           valueBoxOutput("offices_lgd", width = 4)
-        ),
-        fluidRow(
-          h3("potential todos/ideas if I have time:"),
-          p("show LGD of current PF and LGD if we would increase PF by n simulated loans"),
-          p("show EL = EAD * PD * LGD whereby EAD and PD from user input (same for all contracts of mortgage type)"),
-          p("show interest we would need to cover EL (therefore user input for maturity of loan)")
         )
       )
     )
